@@ -1,0 +1,62 @@
+source("libs_and_funcs.R")
+
+#Cut out lake rasters from dem and assign lake elevations
+dem_path <- paste0(data_path, "dtm_10m.tif")
+dem <- raster(dem_path)
+
+lake_poly <- st_read(paste0(rawdata_path, "geus_lake_shape/Lake_boundaries_1958-98.shp")) %>% 
+  st_zm()
+
+#lake 61 not in dem (Bornholm)
+
+lake_indx <- seq_along(lake_paths)[-61]
+
+for(i in lake_indx){
+  
+  print(paste0("Lake ", i))
+  
+  path_i <- lake_paths[i]
+  lake <- raster(path_i)
+  lake_polymask <- mask(lake, as(st_zm(lake_poly), "Spatial"))
+  lake_bbox <- st_bbox(lake_polymask)
+  lake_bbox_poly <- st_as_sfc(lake_bbox)
+  lake_area <- sum(!is.na(lake_polymask[]))
+  buffer_size <- sqrt(lake_area)
+  lake_bbox_poly_buf <- st_buffer(lake_bbox_poly, buffer_size)
+
+  dem_cut <- crop(dem, as(lake_bbox_poly_buf, "Spatial"))
+  lake_resample <- resample(lake_polymask, dem_cut, method = "bilinear")
+  lake_mask <- !is.na(lake_resample)
+  lake_surface_elev <- mean(dem_cut[lake_mask])
+  dem_cut[lake_mask] <- lake_resample[lake_mask]
+  lake_mask_surface_elev <- lake_mask * lake_surface_elev
+
+  writeRaster(dem_cut, paste0(data_path, "lakes_dem/lake_", i, ".tif"), options = "COMPRESS=LZW", overwrite = TRUE, NAflag = -9999)
+  writeRaster(lake_mask, paste0(data_path, "lakes_mask/lake_", i, ".tif"), options = "COMPRESS=LZW", overwrite = TRUE, NAflag = -9999)
+  writeRaster(lake_mask_surface_elev, paste0(data_path, "lakes_surface/lake_", i, ".tif"), options = "COMPRESS=LZW", overwrite = TRUE, NAflag = -9999)
+  
+}
+
+
+#sample Danish lakes and rasterize to 256 by 256 grid
+dk_lakes <- st_read(paste0(rawdata_path, "DK_StandingWater.gml"))
+
+dk_lakes_sub <- dk_lakes %>% 
+  sample_n(1000) %>% 
+  st_zm()
+
+for(i in 1:nrow(dk_lakes_sub)){
+  lake_sample <- dk_lakes_sub[i, ]
+  
+  lake_bbox <- st_bbox(lake_sample)
+  lake_bbox_poly <- st_as_sfc(lake_bbox)
+  lake_bbox_area <- st_area(lake_bbox_poly)
+  buffer_size <- sqrt(lake_bbox_area)
+  lake_bbox_poly_buf <- st_buffer(lake_bbox_poly, buffer_size)
+  
+  template_rast <- raster(as(lake_bbox_poly_buf, "Spatial"), nrows = 256, ncols=256)
+  lake_rast <- rasterize(as(lake_sample, "Spatial"), template_rast, field=1)
+  
+  writePNG(as.matrix(lake_rast), paste0(data_path, "lakes_random/sample_", i, ".png"))
+  
+}
