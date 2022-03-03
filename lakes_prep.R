@@ -11,6 +11,8 @@ lake_poly <- st_read(paste0(rawdata_path, "geus_lake_shape/Lake_boundaries_1958-
 
 lake_indx <- seq_along(lake_paths)[-61]
 
+#for each lake, buffer by sqrt(area) and crop to largest square
+
 for(i in lake_indx){
   
   print(paste0("Lake ", i))
@@ -24,7 +26,36 @@ for(i in lake_indx){
   buffer_size <- sqrt(lake_area)
   lake_bbox_poly_buf <- st_buffer(lake_bbox_poly, buffer_size)
 
-  dem_cut <- crop(dem, as(lake_bbox_poly_buf, "Spatial"))
+  cut_bbox <- st_bbox(lake_bbox_poly_buf)
+  cut_bbox_width <- cut_bbox["xmax"] - cut_bbox["xmin"]
+  cut_bbox_height <- cut_bbox["ymax"] - cut_bbox["ymin"]
+  padding <- abs(cut_bbox_width-cut_bbox_height)/2
+  
+  if(cut_bbox_width > cut_bbox_height){
+    cut_bbox["ymax"] <- cut_bbox["ymax"] + padding
+    cut_bbox["ymin"] <- cut_bbox["ymin"] - padding
+  }else{
+    cut_bbox["xmax"] <- cut_bbox["xmax"] + padding
+    cut_bbox["xmin"] <- cut_bbox["xmin"] - padding
+  }
+  
+  cut_extent <- extent(cut_bbox["xmin"], cut_bbox["xmax"], cut_bbox["ymin"], cut_bbox["ymax"])
+  cut_align <- alignExtent(cut_extent, dem)
+
+  dem_cut <- crop(dem, cut_align)
+  
+  if(nrow(dem_cut) != ncol(dem_cut)){
+    if(nrow(dem_cut) > ncol(dem_cut)){
+      cut_align@xmax <- cut_align@xmax + 10
+    }else{
+      cut_align@ymax <- cut_align@ymax + 10
+    }
+  }
+
+  #cut_extent <- extent(cut_bbox["xmin"], cut_bbox["xmax"], cut_bbox["ymin"], cut_bbox["ymax"])
+
+  dem_cut <- crop(dem, cut_align)
+
   lake_resample <- resample(lake_polymask, dem_cut, method = "bilinear")
   lake_mask <- !is.na(lake_resample)
   lake_surface_elev <- mean(dem_cut[lake_mask])
