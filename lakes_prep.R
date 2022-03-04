@@ -52,8 +52,6 @@ for(i in lake_indx){
     }
   }
 
-  #cut_extent <- extent(cut_bbox["xmin"], cut_bbox["xmax"], cut_bbox["ymin"], cut_bbox["ymax"])
-
   dem_cut <- crop(dem, cut_align)
 
   lake_resample <- resample(lake_polymask, dem_cut, method = "bilinear")
