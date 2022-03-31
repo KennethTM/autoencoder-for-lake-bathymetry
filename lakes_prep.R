@@ -13,7 +13,7 @@ lake_indx <- seq_along(lake_paths)[-61]
 
 #for each lake, buffer by sqrt(area) and crop to largest square
 
-for(i in lake_indx){
+for(i in lake_indx[16:length(lake_indx)]){
   
   print(paste0("Lake ", i))
   
@@ -51,8 +51,17 @@ for(i in lake_indx){
       cut_align@ymax <- cut_align@ymax + 10
     }
   }
-
+  
   dem_cut <- crop(dem, cut_align)
+  
+  mult_factor <- nrow(dem_cut) %% 2^4
+  if(mult_factor != 0){
+    dem_cut_bbox <- extent(dem_cut)
+    mult_factor_pad <- (2^4 - mult_factor)*10
+    dem_cut_bbox@xmax <- dem_cut_bbox@xmax + mult_factor_pad
+    dem_cut_bbox@ymax <- dem_cut_bbox@ymax + mult_factor_pad
+    dem_cut <- crop(dem, dem_cut_bbox)
+  }
 
   lake_resample <- resample(lake_polymask, dem_cut, method = "bilinear")
   lake_mask <- !is.na(lake_resample)
