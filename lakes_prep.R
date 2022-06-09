@@ -7,23 +7,27 @@ dem <- raster(dem_path)
 lake_poly <- st_read(paste0(rawdata_path, "geus_lake_shape/Lake_boundaries_1958-98.shp")) %>% 
   st_zm()
 
-#lake 61 not in dem (Bornholm)
+lake_categories <- read_excel(paste0(rawdata_path, "geus_lakes_categories.xlsx"), sheet = "geus_lakes_categories")
 
-lake_indx <- seq_along(lake_paths)[-61]
+lake_categories_sub <- lake_categories |> 
+  filter(category %in% c("lake", "stream"))
+
+#remove peat (4), fjord (15) and bornholm (1) lakes in _filter folder
+lake_paths_filter <- list.files(paste0(rawdata_path, "geus_lake_raster_filter"), pattern = "*.tif$", full.names = TRUE)
+lake_indx <- seq_along(lake_paths_filter)
 
 #for each lake, buffer by sqrt(area) and crop to largest square
-
-for(i in lake_indx[16:length(lake_indx)]){
+for(i in lake_indx){
   
   print(paste0("Lake ", i))
   
-  path_i <- lake_paths[i]
+  path_i <- lake_paths_filter[i]
   lake <- raster(path_i)
   lake_polymask <- mask(lake, as(st_zm(lake_poly), "Spatial"))
   lake_bbox <- st_bbox(lake_polymask)
   lake_bbox_poly <- st_as_sfc(lake_bbox)
   lake_area <- sum(!is.na(lake_polymask[]))
-  buffer_size <- sqrt(lake_area)
+  buffer_size <- sqrt(lake_area) #adjust this???
   lake_bbox_poly_buf <- st_buffer(lake_bbox_poly, buffer_size)
 
   cut_bbox <- st_bbox(lake_bbox_poly_buf)
