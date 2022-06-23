@@ -27,7 +27,7 @@ for(i in lake_indx){
   lake_bbox <- st_bbox(lake_polymask)
   lake_bbox_poly <- st_as_sfc(lake_bbox)
   lake_area <- sum(!is.na(lake_polymask[]))
-  buffer_size <- sqrt(lake_area) #adjust this???
+  buffer_size <- sqrt(lake_area) #2*sqrt(lake_area/pi)
   lake_bbox_poly_buf <- st_buffer(lake_bbox_poly, buffer_size)
 
   cut_bbox <- st_bbox(lake_bbox_poly_buf)

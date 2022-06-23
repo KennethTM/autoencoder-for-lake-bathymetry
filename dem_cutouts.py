@@ -18,13 +18,6 @@ rows, cols = dem.shape
 
 dem[dem == -9999] = np.nan
 
-#rescale range to 0-1 with approximate min-max
-def dem_scale(dem, min_val=-25, max_val=175):
-    return((dem - min_val)/(max_val - min_val))
-
-def dem_inv_scale(dem_scale, min_val=-25, max_val=175):
-    return(dem_scale*(max_val - min_val)+min_val)
-  
 #crop ratio 64 to 1024 pixels, calc scale
 scale_min = 64/rows
 scale_max = 1024/rows
@@ -36,8 +29,6 @@ cutout_transform = A.OneOf([
     A.RandomResizedCrop(height=cutout_size,width=cutout_size, interpolation= cv2.INTER_LINEAR,
                         scale = (scale_min, scale_max), ratio=(0.75, 1.25)),
     A.RandomResizedCrop(height=cutout_size,width=cutout_size, interpolation= cv2.INTER_CUBIC,
-                        scale = (scale_min, scale_max), ratio=(0.75, 1.25)),
-    A.RandomResizedCrop(height=cutout_size,width=cutout_size, interpolation= cv2.INTER_AREA,
                         scale = (scale_min, scale_max), ratio=(0.75, 1.25)),
     ],
     p=1.0
@@ -65,9 +56,7 @@ while i < dataset_size:
 img_cutout_np = np.stack(img_cutout)
 img_cutout_np[np.isnan(img_cutout_np)] = 0
 
-img_cutout_np_scale = dem_scale(img_cutout_np)
+print(np.nanmin(img_cutout_np))
+print(np.nanmax(img_cutout_np))
 
-print(np.nanmin(img_cutout_np_scale))
-print(np.nanmax(img_cutout_np_scale))
-
-np.savez("data/data.npz", dem = img_cutout_np_scale)
+np.savez("data/data.npz", dem = img_cutout_np)
