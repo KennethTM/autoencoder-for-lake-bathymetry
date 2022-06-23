@@ -10,9 +10,11 @@ class UNet(nn.Module):
 
     def __init__(self, in_channels=3, out_channels=1, init_features=8):
         super(UNet, self).__init__()
-
+        
+        self.final_act = nn.Hardtanh()
+        
         features = init_features
-        self.encoder1 = UNet._block(in_channels, features, name="enc1")
+        self.encoder1 = UNet._block(in_channels + 1, features, name="enc1")
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.encoder2 = UNet._block(features, features * 2, name="enc2")
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -44,7 +46,10 @@ class UNet(nn.Module):
             in_channels=features, out_channels=out_channels, kernel_size=1
         )
 
-    def forward(self, x):
+    def forward(self, x_in, x_mask):
+        x = x_in + x_mask
+        x = torch.cat((x, x_mask), dim=1)
+      
         enc1 = self.encoder1(x)
         enc2 = self.encoder2(self.pool1(enc1))
         enc3 = self.encoder3(self.pool2(enc2))
@@ -64,7 +69,7 @@ class UNet(nn.Module):
         dec1 = self.upconv1(dec2)
         dec1 = torch.cat((dec1, enc1), dim=1)
         dec1 = self.decoder1(dec1)
-        return torch.sigmoid(self.conv(dec1))
+        return self.final_act(self.conv(dec1))
 
     @staticmethod
     def _block(in_channels, features, name):
@@ -78,11 +83,11 @@ class UNet(nn.Module):
                             out_channels=features,
                             kernel_size=3,
                             padding=1,
-                            bias=False,
+                            #bias=False,
                         ),
                     ),
-                    (name + "norm1", nn.BatchNorm2d(num_features=features)),
-                    (name + "relu1", nn.ReLU(inplace=True)),
+                    #(name + "norm1", nn.BatchNorm2d(num_features=features)),
+                    (name + "act1", nn.LeakyReLU()),
                     (
                         name + "conv2",
                         nn.Conv2d(
@@ -90,11 +95,11 @@ class UNet(nn.Module):
                             out_channels=features,
                             kernel_size=3,
                             padding=1,
-                            bias=False,
+                            #bias=False,
                         ),
                     ),
-                    (name + "norm2", nn.BatchNorm2d(num_features=features)),
-                    (name + "relu2", nn.ReLU(inplace=True)),
+                    #(name + "norm2", nn.BatchNorm2d(num_features=features)),
+                    (name + "act2", nn.LeakyReLU()),
                 ]
             )
         )
