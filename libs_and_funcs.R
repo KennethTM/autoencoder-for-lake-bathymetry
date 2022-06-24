@@ -2,6 +2,8 @@ library(raster);library(sf);library(tidyverse);library(png);library(readxl)
 
 #;library(gdalUtils)
 
+set.seed(9999)
+
 rawdata_path <- paste0(getwd(), "/rawdata/")
 data_path <- paste0(getwd(), "/data/")
 
