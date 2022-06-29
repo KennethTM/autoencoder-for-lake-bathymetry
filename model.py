@@ -2,7 +2,6 @@
 #https://github.com/mateuszbuda/brain-segmentation-pytorch
 
 from collections import OrderedDict
-
 import torch
 import torch.nn as nn
 
@@ -72,11 +71,9 @@ class UNet(nn.Module):
                             in_channels=in_channels,
                             out_channels=features,
                             kernel_size=3,
-                            padding=1,
-                            #bias=False,
+                            padding=1
                         ),
                     ),
-                    #(name + "norm1", nn.BatchNorm2d(num_features=features)),
                     (name + "act1", nn.LeakyReLU()),
                     (
                         name + "conv2",
@@ -84,11 +81,9 @@ class UNet(nn.Module):
                             in_channels=features,
                             out_channels=features,
                             kernel_size=3,
-                            padding=1,
-                            #bias=False,
+                            padding=1
                         ),
                     ),
-                    #(name + "norm2", nn.BatchNorm2d(num_features=features)),
                     (name + "act2", nn.LeakyReLU()),
                 ]
             )
