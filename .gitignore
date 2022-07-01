@@ -2,7 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
-data/
+data/*.npz
+data/*.tif
 rawdata/
 __pycache__/
 old/

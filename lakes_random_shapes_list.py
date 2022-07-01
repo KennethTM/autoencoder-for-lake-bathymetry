@@ -1,6 +1,5 @@
 import cv2
 import os
-import pickle
 import numpy as np 
 
 #Load random lake masks created in "lakes_random_shapes.R" script and save as numpy array
@@ -14,8 +13,8 @@ mask_random_list = []
 for i in mask_random_paths:
     lake_path = mask_random_dir+i
     lake_array = cv2.imread(lake_path, cv2.IMREAD_UNCHANGED)
-    lake_array_float = lake_array.astype("float32") / 255.0
-    mask_random_list.append(lake_array_float)
+    lake_array_bool = (lake_array/255).astype("bool")
+    mask_random_list.append(lake_array_bool)
 
 mask_random_np = np.array(mask_random_list)
 

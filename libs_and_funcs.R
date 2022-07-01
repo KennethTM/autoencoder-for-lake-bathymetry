@@ -1,5 +1,5 @@
 library(raster);library(sf);library(tidyverse);library(png);library(readxl)
-
+#;library(fasterize)
 #;library(gdalUtils)
 
 set.seed(9999)

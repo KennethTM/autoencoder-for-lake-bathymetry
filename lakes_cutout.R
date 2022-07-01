@@ -7,17 +7,21 @@ dem <- raster(dem_path)
 lake_poly <- st_read(paste0(rawdata_path, "geus_lake_shape/Lake_boundaries_1958-98.shp")) %>% 
   st_zm()
 
+#lake_poly_elev_raster <- fasterize(lake_poly, raster(dem), field = "elevation")
+
 lake_categories <- read_excel(paste0(rawdata_path, "geus_lakes_categories.xlsx"), sheet = "geus_lakes_categories")
 
 lake_categories_sub <- lake_categories |> 
   filter(category %in% c("lake", "stream"))
 
 #Filter lakes
-#Remove peat lakes (4), fjord/beach lakes (15) and Bornholm (1, outside study area) in _filter folder
+#Remove peat lakes (4), fjord/beach lakes (16) and Bornholm (1, outside study area) in "_filter" folder
 lake_paths_filter <- list.files(paste0(rawdata_path, "geus_lake_raster_filter"), pattern = "*.tif$", full.names = TRUE)
 lake_indx <- seq_along(lake_paths_filter)
 
 buffer_sizes <- c(3/3, 2/3, 1/3)
+
+result_list <- vector("list", length = length(lake_indx))
 
 #For each buffer size prepare lakes
 for(b in buffer_sizes){
@@ -74,15 +78,28 @@ for(b in buffer_sizes){
       dem_cut <- crop(dem, dem_cut_bbox)
     }
     
-    lake_resample <- resample(lake_polymask, dem_cut, method = "bilinear")
+    lake_resample <- resample(lake_polymask, raster(dem_cut), method = "bilinear")
     lake_mask <- !is.na(lake_resample)
-    lake_surface_elev <- mean(dem_cut[lake_mask])
+    lake_surface_elev <- mean(dem_cut[lake_mask]) #lake surface elevation extracted from dem
+    #lake_surface_elev <- modal(na.omit(unlist(raster::extract(lake_poly_elev_raster, as(lake_bbox_poly, "Spatial")))))
     dem_cut[lake_mask] <- lake_resample[lake_mask]
-    lake_mask_surface_elev <- lake_mask * lake_surface_elev
+
+    #Write summary statistics for each lake
+    if(b == 1){
+      lake_dephts <- lake_surface_elev - na.omit(lake_resample[])
+      lake_coords <- st_coordinates(st_centroid(lake_bbox_poly))
+      
+      result_list[[i]] <- data.frame(lake_id = i, area = lake_area, elev = lake_surface_elev,
+                                     min_depth = min(lake_dephts), max_depth = max(lake_dephts),
+                                     mean_depth = mean(lake_dephts), x = lake_coords[1], y = lake_coords[2])
+    }
     
     writeRaster(dem_cut, paste0(buffer_folder, "lakes_dem/lake_", i, ".tif"), options = "COMPRESS=LZW", overwrite = TRUE, NAflag = -9999)
     writeRaster(lake_mask, paste0(buffer_folder, "lakes_mask/lake_", i, ".tif"), options = "COMPRESS=LZW", overwrite = TRUE, NAflag = -9999)
-    writeRaster(lake_mask_surface_elev, paste0(buffer_folder, "lakes_surface/lake_", i, ".tif"), options = "COMPRESS=LZW", overwrite = TRUE, NAflag = -9999)
     
   }
 }
+
+#Combine lake summaries and write to file
+result_df <- bind_rows(result_list)
+write_csv(result_df, "data/lakes_summary.csv")

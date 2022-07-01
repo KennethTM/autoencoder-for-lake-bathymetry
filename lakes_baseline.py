@@ -1,6 +1,8 @@
 import pandas as pd
 import pickle
 import numpy as np
+import scipy
+import cv2
 
 #Compute lake summary statistics
 
@@ -17,25 +19,9 @@ for s in splits:
 
     for i in lakes:
 
-        ids = i["id"]
-        area = i["mask"].sum()*10*10
-        elev = i["surface"].max()
-        bathy = elev - i["lake"][i["mask"] == 1]
-        mean_depth = bathy.mean()
-        min_depth = bathy.min()
-        max_depth = bathy.max()
 
-        rows, cols = i["lake"].shape
-        x_coord = i["profile"]["transform"][2] + (cols//2) * 10
-        y_coord = i["profile"]["transform"][5] + (rows//2) * 10
+x = lakes_dict["train"][0]
 
-        result_list.append(
-            {"ids": ids, "set": s, "x_coord": x_coord, "y_coord":  y_coord,
-             "area": area, "max_depth": max_depth, "mean_depth": mean_depth, 
-             "elev": elev, "min_depth": min_depth}
-        )
+#https://docs.opencv.org/4.x/df/d3d/tutorial_py_inpainting.html
 
-result_df = pd.DataFrame.from_dict(result_list)
-result_df.sort_values("ids")
-
-result_df.to_csv("data/XXX.csv")
+#https://stackoverflow.com/questions/37662180/interpolate-missing-values-2d-python
