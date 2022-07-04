@@ -1,4 +1,5 @@
-library(raster);library(sf);library(tidyverse);library(png);library(readxl);library(patchwork)
+library(raster);library(sf);library(tidyverse);library(png);library(readxl);
+library(patchwork);library(colorspace);
 #;library(fasterize)
 #;library(gdalUtils)
 
