@@ -2,6 +2,7 @@ import random
 import numpy as np
 import cv2
 import albumentations as A
+from scipy.interpolate import griddata
 
 #Helper functions 
 
@@ -60,3 +61,39 @@ lake_aug = A.Compose([
     A.GaussNoise(p=0.25, var_limit=(0, 1e-4)),
     A.GaussianBlur(p=0.25)
 ])
+
+#Function for computing rmse, mae, and correlation between observed and predicted lake elevations
+def score_rmse(obs, pred):
+    return(np.sqrt(np.mean(np.square(obs - pred))))
+
+def score_mae(obs, pred):
+    return(np.mean(np.abs(obs - pred)))
+
+def score_corr(obs, pred):
+    return(np.corrcoef(obs, pred)[1,0])
+
+#Function for computing baseline interpolation of lake bathymetry from surrounding terrain
+def baseline(dem, mask, mode):
+
+    if mode == "telea":
+        hat = cv2.inpaint(dem, mask.astype("uint8"), 3, cv2.INPAINT_TELEA)
+        return(hat[mask == 1])
+
+    elif mode == "ns":
+        hat = cv2.inpaint(dem, mask.astype("uint8"), 3, cv2.INPAINT_NS)
+        return(hat[mask == 1])
+
+    xy = np.argwhere(mask == 0)
+    z = dem[mask == 0]
+    xy_hat = np.argwhere(mask == 1)
+
+    if mode == "linear":
+        hat = griddata(xy, z, xy_hat, method = "linear")
+        return(hat)
+
+    elif mode == "cubic":
+        hat = griddata(xy, z, xy_hat, method = "cubic")
+        return(hat)
+
+    else:
+        return(1)

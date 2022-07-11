@@ -3,6 +3,7 @@ import os
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger
 from lightning_module import AutoEncoder
 from helpers import lake_aug
 from data_classes import Lakes
@@ -41,11 +42,14 @@ def main(buffer, weights):
     else:
         lake_model = AutoEncoder.load_from_checkpoint(weights_path[weights])
 
-
+    #Checkpoint based on best validation loss
     checkpoint_callback = ModelCheckpoint(monitor="val_loss", save_last=True)
 
+    #Experiment version naming
+    logger = TensorBoardLogger(version="buffer_{}_weights_{}".format(buffer, weights))
+
     #Initiate trainer
-    trainer = pl.Trainer(gpus=1, max_epochs=500, callbacks=checkpoint_callback, accumulate_grad_batches=8)
+    trainer = pl.Trainer(gpus=1, max_epochs=500, callbacks=checkpoint_callback, accumulate_grad_batches=8, logger=logger)
 
     #Train model
     trainer.fit(lake_model, train_dl, valid_dl)
