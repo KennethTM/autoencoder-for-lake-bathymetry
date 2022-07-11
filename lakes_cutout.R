@@ -7,8 +7,6 @@ dem <- raster(dem_path)
 lake_poly <- st_read(paste0(rawdata_path, "geus_lake_shape/Lake_boundaries_1958-98.shp")) %>% 
   st_zm()
 
-#lake_poly_elev_raster <- fasterize(lake_poly, raster(dem), field = "elevation")
-
 lake_categories <- read_excel(paste0(rawdata_path, "geus_lakes_categories.xlsx"), sheet = "geus_lakes_categories")
 
 lake_categories_sub <- lake_categories |> 
@@ -80,8 +78,7 @@ for(b in buffer_sizes){
     
     lake_resample <- resample(lake_polymask, raster(dem_cut), method = "bilinear")
     lake_mask <- !is.na(lake_resample)
-    lake_surface_elev <- mean(dem_cut[lake_mask]) #lake surface elevation extracted from dem
-    #lake_surface_elev <- modal(na.omit(unlist(raster::extract(lake_poly_elev_raster, as(lake_bbox_poly, "Spatial")))))
+    lake_surface_elev <- mean(dem_cut[lake_mask], na.rm=TRUE) #lake surface elevation extracted from dem
     dem_cut[lake_mask] <- lake_resample[lake_mask]
 
     #Write summary statistics for each lake

@@ -12,7 +12,7 @@ pl.seed_everything(9999)
 random.seed(9999)
 
 #Define main function
-def dem_training(init_features):
+def main(init_features):
 
     #Load DEM data
     data = np.load("data/data.npz")
@@ -54,5 +54,4 @@ if __name__ == "__main__":
     parser.add_argument("init_features", type = int, help="Number of initial features in Unet")
     arguments = parser.parse_args()
 
-    dem_training(arguments.init_features)
-
+    main(arguments.init_features)
