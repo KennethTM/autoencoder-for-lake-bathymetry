@@ -30,11 +30,10 @@ ggsave("figures/figure_1.png", figure_1, width = 84, height = 110, units = "mm")
 #Lake summary statistics
 lakes <- read_csv("data/lakes_summary_partition.csv")
 
-lakes |> 
-  mutate(area_km2 = area*10^-6) |> #area to km2
+table_1 <- lakes |> 
+  mutate(area_km2 = area*10^-4) |> #area to ha
   dplyr::select(area_km2, elev, mean_depth, max_depth) |> 
   gather(variable, value) |> 
-  na.omit() |> #lake 89 missing values??, 1 lake with negative mean depth, remove lakes with zmax < 1
   group_by(variable) |> 
   summarise(min = min(value),
             q25 = quantile(value, 0.25),
@@ -43,6 +42,8 @@ lakes |>
             q75 = quantile(value, 0.75),
             max = max(value)) |> 
   mutate_if(is.numeric, ~round(.x, digits=1))
+
+write_csv(table_1, "figures/table_1.csv")
 
 #Figure 2
 target <- readPNG("data/target.png")
