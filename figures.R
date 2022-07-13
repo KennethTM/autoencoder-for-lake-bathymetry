@@ -4,11 +4,17 @@ source("libs_and_funcs.R")
 
 #Figure 1
 #Elevation map of Denmark and lakes
-
 dem_coarse <- getData(name = "alt", path = "data/", country="DNK")
 dem_course_crop <- trim(crop(dem_coarse, extent(c(8, 14, 54.5, 57.8))))
 dem_utm <- projectRaster(dem_course_crop, crs = dk_epsg, method="bilinear")
 dem_df <- as.data.frame(dem_utm, xy=TRUE)
+
+dk_iceage <- st_read("data/dk_iceage.sqlite")
+dk_border <- st_read("data/dk_border.sqlite")
+dk_iceage_cut <- dk_iceage %>% 
+  st_cast("LINESTRING") %>% 
+  st_intersection(dk_border) %>% 
+  st_collection_extract("LINESTRING")
 
 lakes <- read_csv("data/lakes_summary_partition.csv")
 lakes_sf <- lakes |> 
@@ -17,11 +23,14 @@ lakes_sf <- lakes |>
 figure_1 <- ggplot()+
   geom_raster(data=dem_df, aes(x, y, fill=DNK_msk_alt))+
   scale_fill_continuous_sequential(palette="Terrain 2", rev=FALSE, na.value = NA, name="Elevation (m)")+
+  geom_sf(data = dk_iceage_cut, linetype=2, col = "black", show.legend = FALSE)+
   geom_sf(data=lakes_sf, col="black", shape=1)+
   xlab("Longitude")+
   ylab("Latitude")+
   theme(legend.position = "bottom")+
-  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5, barwidth = unit(60, "mm")))
+  guides(fill = guide_colorbar(ticks = FALSE, title.position = "top", title.hjust = 0.5, barwidth = unit(60, "mm")))
+
+figure_1
 
 ggsave("figures/figure_1.png", figure_1, width = 84, height = 110, units = "mm")
 
@@ -45,6 +54,7 @@ table_1 <- lakes |>
 write_csv(table_1, "figures/table_1.csv")
 
 #Figure 2
+#Overview of cropping approach and an example observed/predicted lake bathymetry
 dem_path <- paste0(data_path, "dtm_10m.tif")
 dem <- raster(dem_path)
 
@@ -146,6 +156,16 @@ figure_2 <- fig_2_a / (fig_2_b + fig_2_c) / (fig_2_d + fig_2_e) + plot_annotatio
 figure_2
 
 ggsave("figures/figure_2.png", figure_2, width = 130, height = 200, units = "mm")
+
+
+
+
+#Figure 3
+#Histogram with performance metrics for best model
+
+#Figure 4
+#Example of prediction with ground truth, best baseline and best deep learning model
+
 
 
 # #Supplementary figure to explain pretraining??
