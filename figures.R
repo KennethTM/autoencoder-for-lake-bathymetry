@@ -39,8 +39,8 @@ ggsave("figures/figure_1.png", figure_1, width = 84, height = 110, units = "mm")
 lakes <- read_csv("data/lakes_summary_partition.csv")
 
 table_1 <- lakes |> 
-  mutate(area_km2 = area*10^-4) |> #area to ha
-  dplyr::select(area_km2, elev, mean_depth, max_depth) |> 
+  mutate(area_ha = area*10^-4) |> #area to ha
+  dplyr::select(area_ha, elev, mean_depth, max_depth) |> 
   gather(variable, value) |> 
   group_by(variable) |> 
   summarise(min = min(value),
