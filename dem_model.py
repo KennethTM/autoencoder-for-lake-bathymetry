@@ -3,6 +3,7 @@ import random
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger
 from lightning_module import AutoEncoder
 from helpers import dem_scale
 from data_classes import DEMTrain, DEMValid
@@ -33,17 +34,20 @@ def main(init_features):
     valid_dataset = DEMValid(valid, valid_mask)
 
     #Create dataloaders
-    train_loader = DataLoader(train_dataset, batch_size=32, num_workers=0, shuffle = True)
-    val_loader = DataLoader(valid_dataset, batch_size=32, num_workers=0, shuffle = False)
+    train_loader = DataLoader(train_dataset, batch_size=32, num_workers=0, shuffle=True)
+    val_loader = DataLoader(valid_dataset, batch_size=32, num_workers=0, shuffle=False)
 
     #Initiate model
     dem_model = AutoEncoder(init_features=init_features)
 
     #Initiate callbacks
     checkpoint_callback = ModelCheckpoint(monitor="val_loss", save_last=True)
+    
+    #Experiment version naming
+    logger = TensorBoardLogger("lightning_logs", name="dem_models", version="dem_{}".format(str(init_features)))
 
     #Initiate trainer
-    trainer = pl.Trainer(gpus=1, max_epochs=1000, callbacks=checkpoint_callback)
+    trainer = pl.Trainer(gpus=1, max_epochs=1000, callbacks=checkpoint_callback, logger=logger, precision=16)
 
     #Train model
     trainer.fit(dem_model, train_loader, val_loader)

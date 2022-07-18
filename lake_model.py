@@ -16,12 +16,6 @@ random.seed(9999)
 #Define main function
 def main(buffer, weights):
 
-    weights_path = {
-        "dem_8": "lightning_logs/version_XX", 
-        "dem_16": "lightning_logs/version_XX", 
-        "dem_32": "lightning_logs/version_XX", 
-        "dem_64": "lightning_logs/version_XX"}
-
     buffer_dir = "data/buffer_{}_percent".format(buffer)
 
     #Import lake dict
@@ -34,25 +28,26 @@ def main(buffer, weights):
     train_ds = Lakes(train_list, lake_aug)
     valid_ds = Lakes(valid_list)
 
-    train_dl = DataLoader(train_ds, batch_size=1, num_workers=0, shuffle = True)
-    valid_dl = DataLoader(valid_ds, batch_size=1, num_workers=0, shuffle = False)
+    train_loader = DataLoader(train_ds, batch_size=1, num_workers=0, shuffle = True)
+    valid_loader = DataLoader(valid_ds, batch_size=1, num_workers=0, shuffle = False)
 
     if weights == "random":
         lake_model = AutoEncoder()
     else:
-        lake_model = AutoEncoder.load_from_checkpoint(weights_path[weights])
+        weights_path = "lightning_logs/dem_models/{}/checkpoints/last.ckpt".format(weights)
+        lake_model = AutoEncoder.load_from_checkpoint(weights_path)
 
     #Checkpoint based on best validation loss
     checkpoint_callback = ModelCheckpoint(monitor="val_loss", save_last=True)
 
     #Experiment version naming
-    logger = TensorBoardLogger(version="buffer_{}_weights_{}".format(buffer, weights))
+    logger = TensorBoardLogger("lightning_logs", name="lake_models", version="buffer_{}_weights_{}".format(buffer, weights))
 
     #Initiate trainer
-    trainer = pl.Trainer(gpus=1, max_epochs=500, callbacks=checkpoint_callback, accumulate_grad_batches=8, logger=logger)
+    trainer = pl.Trainer(gpus=1, max_epochs=500, callbacks=checkpoint_callback, accumulate_grad_batches=8, logger=logger, precision=16)
 
     #Train model
-    trainer.fit(lake_model, train_dl, valid_dl)
+    trainer.fit(lake_model, train_loader, valid_loader)
 
 if __name__ == "__main__":
 
