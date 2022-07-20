@@ -14,7 +14,7 @@ pl.seed_everything(9999)
 random.seed(9999)
 
 #Define main function
-def main(buffer, weights):
+def main(buffer, weights, init_features):
 
     buffer_dir = "data/buffer_{}_percent".format(buffer)
 
@@ -32,19 +32,21 @@ def main(buffer, weights):
     valid_loader = DataLoader(valid_ds, batch_size=1, num_workers=0, shuffle = False)
 
     if weights == "random":
-        lake_model = AutoEncoder()
-    else:
-        weights_path = "lightning_logs/dem_models/{}/checkpoints/last.ckpt".format(weights)
+        lake_model = AutoEncoder(init_features=init_features)
+    elif weights == "dem":
+        weights_path = "lightning_logs/dem_models/dem_{}/checkpoints/last.ckpt".format(str(init_features))
         lake_model = AutoEncoder.load_from_checkpoint(weights_path)
+    else:
+        return(-1)
 
     #Checkpoint based on best validation loss
     checkpoint_callback = ModelCheckpoint(monitor="val_loss", save_last=True)
 
     #Experiment version naming
-    logger = TensorBoardLogger("lightning_logs", name="lake_models", version="buffer_{}_weights_{}".format(buffer, weights))
+    logger = TensorBoardLogger("lightning_logs", name="lake_models", version="buffer_{}_weights_{}_{}".format(buffer, weights, str(init_features)))
 
     #Initiate trainer
-    trainer = pl.Trainer(gpus=1, max_epochs=500, callbacks=checkpoint_callback, accumulate_grad_batches=8, logger=logger, precision=16)
+    trainer = pl.Trainer(gpus=1, max_epochs=500, callbacks=checkpoint_callback, accumulate_grad_batches=8, logger=logger)
 
     #Train model
     trainer.fit(lake_model, train_loader, valid_loader)
@@ -53,7 +55,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Train lake model from different inital weights")
     parser.add_argument("buffer", type = str, help="Buffer distance used for crop, one of 33, 66 or 100")
-    parser.add_argument("weights", type = str, help="Initial weights used for training, one of 'random', 'dem_8', 'dem_16', 'dem_32', or  'dem_64'")
+    parser.add_argument("weights", type = str, help="Initial weights used for training - one of 'random' or 'dem'")
+    parser.add_argument("init_features", type = int, help="Number of initial features in Unet")
     arguments = parser.parse_args()
 
-    main(arguments.buffer, arguments.weights)
+    main(arguments.buffer, arguments.weights, arguments.init_features)

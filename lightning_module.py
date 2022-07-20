@@ -2,6 +2,7 @@ import pytorch_lightning as pl
 from loss import MAELossHole
 import torch 
 from model import UNet
+from helpers import dem_inv_scale
 
 class AutoEncoder(pl.LightningModule):
     def __init__(self, init_features = 8, lr = 1e-4):
@@ -35,3 +36,8 @@ class AutoEncoder(pl.LightningModule):
         x_hat = self.unet(x_in, x_mask)
         loss = self.loss(x_hat, x_obs, x_mask)
         self.log('val_loss', loss, on_epoch=True, prog_bar=True)
+
+        x_hat_original_scale = dem_inv_scale(x_hat)
+        x_obs_original_scale = dem_inv_scale(x_obs)
+        loss_original_scale = self.loss(x_hat_original_scale, x_obs_original_scale, x_mask)
+        self.log('val_loss_original_scale', loss_original_scale, on_epoch=True)
