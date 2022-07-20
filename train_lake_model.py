@@ -8,8 +8,8 @@ def main():
     #Create hyperparameter grid
     grid_list = [(b, w, f) for b in buffer_list for w in weights_list for f in init_features_list]
 
-    for b, w in grid_list:
-        subprocess.call(["python", "lake_model.py", b, w])
+    for b, w, f in grid_list:
+        subprocess.call(["python", "lake_model.py", b, w, f])
 
 if __name__ == "__main__":
     main()
