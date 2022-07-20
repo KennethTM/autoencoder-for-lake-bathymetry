@@ -166,6 +166,28 @@ ggsave("figures/figure_2.png", figure_2, width = 130, height = 200, units = "mm"
 #Figure 4
 #Example of prediction with ground truth, best baseline and best deep learning model
 
+# library(rayshader)
+# 
+# lake <- 22 #Borre Sø
+# lake_33 <- raster(paste0("data/buffer_33_percent/lakes_dem/lake_", lake, ".tif"))
+# lake_mask <- raster(paste0("data/buffer_33_percent/lakes_mask/lake_", lake, ".tif"))
+# 
+# lake_33_mask <- mask(lake_33, lake_mask, maskvalue=0)
+# lake_33_mask <- trim(lake_33_mask)
+# 
+# lake_mat <- raster_to_matrix(lake_33)
+# 
+# ray <- ray_shade(lake_mat, zscale=10)
+# amb <- ambient_shade(lake_mat, zscale=10)
+# 
+# lake_mat %>%
+#   sphere_shade(zscale=10, texture = "imhof1") %>%
+#   add_shadow(ray, 0.5) %>%
+#   add_shadow(amb, 0) %>%
+#   plot_3d(lake_mat, solid = TRUE, shadow = TRUE, water = TRUE, waterdepth = 20, zscale=10)
+
+
+
 
 
 # #Supplementary figure to explain pretraining??
