@@ -8,3 +8,8 @@ rawdata/
 __pycache__/
 old/
 .ipynb_checkpoints/
+data/*.sqlite
+lightning_logs/
+data/buffer_*_percent/
+data/lakes_random/
+data/*.zip
