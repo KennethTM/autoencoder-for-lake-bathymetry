@@ -47,7 +47,7 @@ def main(init_features):
     logger = TensorBoardLogger("lightning_logs", name="dem_models", version="dem_{}".format(str(init_features)))
 
     #Initiate trainer
-    trainer = pl.Trainer(gpus=1, max_epochs=1000, callbacks=checkpoint_callback, logger=logger, precision=16)
+    trainer = pl.Trainer(gpus=1, max_epochs=1000, callbacks=checkpoint_callback, logger=logger)
 
     #Train model
     trainer.fit(dem_model, train_loader, val_loader)

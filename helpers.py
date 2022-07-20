@@ -97,3 +97,7 @@ def baseline(dem, mask, mode):
 
     else:
         return(1)
+
+buffer_list = ['33', '66', '100']
+weights_list = ['random', 'dem']
+init_features_list = [4, 8, 16, 32]
