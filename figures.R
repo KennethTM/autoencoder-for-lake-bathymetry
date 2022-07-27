@@ -161,7 +161,7 @@ ggsave("figures/figure_2.png", figure_2, width = 130, height = 200, units = "mm"
 
 
 #Figure 3
-#Histogram with performance metrics for best model
+#Histograms with performance metrics for best model and obs vs pred avg elevation (2x2 plot) for all lakes and test set only
 
 #Figure 4
 #Example of prediction with ground truth, best baseline and best deep learning model
@@ -185,6 +185,72 @@ ggsave("figures/figure_2.png", figure_2, width = 130, height = 200, units = "mm"
 #   add_shadow(ray, 0.5) %>%
 #   add_shadow(amb, 0) %>%
 #   plot_3d(lake_mat, solid = TRUE, shadow = TRUE, water = TRUE, waterdepth = 20, zscale=10)
+
+
+#Supplementary material
+#Figure S1
+#Validation loss during training of DEM models
+dem_loss <- read_csv("data/dem_model_loss.csv")
+
+dem_loss_original <- dem_loss |> 
+  group_by(metric, init_features) |> 
+  mutate(epoch = 1:n(),
+         complexity = case_when(init_features == 4 ~ "0.121",
+                                init_features == 8 ~ "0.485",
+                                init_features == 16 ~ "1.9",
+                                init_features == 32 ~ "7.8")) |> 
+  ungroup() |> 
+  filter(metric == "val_loss_original_scale")
+  
+fig_s1 <- dem_loss_original |> 
+  ggplot(aes(epoch, value, col=complexity))+
+  geom_line()+
+  scale_color_viridis_d(name="Model size", direction = -1)+
+  ylab("Mean absolute error (m)")+
+  xlab("Epoch")+
+  theme(legend.position = c(0.8, 0.8))+
+  coord_cartesian(ylim=c(2, 10))
+
+fig_s1
+
+ggsave("figures/figure_s1.png", fig_s1, width = 129, height = 100, units = "mm")
+
+#Figure S2
+#Validation loss during training of LAKE models
+lake_loss <- read_csv("data/lake_model_loss.csv")
+
+lake_loss_original <- lake_loss |> 
+  group_by(metric, buffer, weights, init_features) |> 
+  mutate(epoch = 1:n(),
+         complexity = case_when(init_features == 4 ~ "0.121",
+                                init_features == 8 ~ "0.485",
+                                init_features == 16 ~ "1.9",
+                                init_features == 32 ~ "7.8")) |> 
+  ungroup() |> 
+  filter(metric == "val_loss_original_scale")
+
+lake_best_models <- lake_loss_original |> 
+  group_by(buffer, weights, init_features) |> 
+  summarise(best_epoc = epoch[which.min(value)], best_loss = min(value)) |> 
+  ungroup()
+
+fig_s2 <- lake_loss_original |>
+  mutate(buffer_label = factor(paste0(buffer, "%"), levels = c("33%", "66%", "100%")),
+         weights_label = factor(ifelse(weights == "dem", "DEM", "Random"), levels=c("Random", "DEM")),
+         value = ifelse(value > 15, NA, value)) |> 
+  na.omit() |> 
+  ggplot(aes(epoch, value, col=complexity))+
+  geom_line()+
+  scale_color_viridis_d(name="Model size", direction = -1)+
+  ylab("Mean absolute error (m)")+
+  xlab("Epoch")+
+  geom_hline(yintercept = min(lake_best_models$best_loss), linetype=2)+
+  facet_grid(weights_label~buffer_label, scales="free_y")+
+  theme(strip.background = element_blank())
+
+fig_s2
+
+ggsave("figures/figure_s2.png", fig_s2, width = 174, height = 120, units = "mm")
 
 
 
