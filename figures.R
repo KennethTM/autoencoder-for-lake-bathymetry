@@ -2,6 +2,25 @@
 
 source("libs_and_funcs.R")
 
+#Table 1
+#Lake summary statistics
+lakes <- read_csv("data/lakes_summary_partition.csv")
+
+table_1 <- lakes |> 
+  mutate(area_ha = area*10^-4) |> #area from m2 to ha
+  dplyr::select(area_ha, elev, mean_depth, max_depth) |> 
+  gather(variable, value) |> 
+  group_by(variable) |> 
+  summarise(min = min(value),
+            q25 = quantile(value, 0.25),
+            median = median(value),
+            mean = mean(value),
+            q75 = quantile(value, 0.75),
+            max = max(value)) |> 
+  mutate_if(is.numeric, ~round(.x, digits=1))
+
+write_csv(table_1, "figures/table_1.csv")
+
 #Figure 1
 #Elevation map of Denmark and lakes
 dem_coarse <- getData(name = "alt", path = "data/", country="DNK")
@@ -11,9 +30,9 @@ dem_df <- as.data.frame(dem_utm, xy=TRUE)
 
 dk_iceage <- st_read("data/dk_iceage.sqlite")
 dk_border <- st_read("data/dk_border.sqlite")
-dk_iceage_cut <- dk_iceage %>% 
-  st_cast("LINESTRING") %>% 
-  st_intersection(dk_border) %>% 
+dk_iceage_cut <- dk_iceage |> 
+  st_cast("LINESTRING") |> 
+  st_intersection(dk_border) |> 
   st_collection_extract("LINESTRING")
 
 lakes <- read_csv("data/lakes_summary_partition.csv")
@@ -33,25 +52,6 @@ figure_1 <- ggplot()+
 figure_1
 
 ggsave("figures/figure_1.png", figure_1, width = 84, height = 110, units = "mm")
-
-#Table 1
-#Lake summary statistics
-lakes <- read_csv("data/lakes_summary_partition.csv")
-
-table_1 <- lakes |> 
-  mutate(area_ha = area*10^-4) |> #area to ha
-  dplyr::select(area_ha, elev, mean_depth, max_depth) |> 
-  gather(variable, value) |> 
-  group_by(variable) |> 
-  summarise(min = min(value),
-            q25 = quantile(value, 0.25),
-            median = median(value),
-            mean = mean(value),
-            q75 = quantile(value, 0.75),
-            max = max(value)) |> 
-  mutate_if(is.numeric, ~round(.x, digits=1))
-
-write_csv(table_1, "figures/table_1.csv")
 
 #Figure 2
 #Overview of cropping approach and an example observed/predicted lake bathymetry
@@ -157,13 +157,65 @@ figure_2
 
 ggsave("figures/figure_2.png", figure_2, width = 130, height = 200, units = "mm")
 
-
-
-
 #Figure 3
-#Histograms with performance metrics for best model and obs vs pred avg elevation (2x2 plot) for all lakes and test set only
+#Performance of baseline and unets models
+baseline <- read_csv("data/baseline_performance.csv")
+
+baseline_models <- baseline |> 
+  group_by(buffer, mode) |> 
+  summarise(all = mean(mae), valid = mean(mae[partition == "valid"])) |> 
+  gather(partition, mae, valid, all) |> 
+  mutate(model_label = case_when(mode == "ns" ~ "Navier-Stokes",
+                                 mode == "telea" ~ "Telea",
+                                 mode == "linear" ~ "Linear",
+                                 mode == "cubic" ~ "Cubic"),
+         model = paste0("Baseline[", model_label,"]"))
+
+#Unet models
+lake_loss <- read_csv("data/lake_model_loss.csv")
+
+lake_loss_original <- lake_loss |> 
+  group_by(metric, buffer, weights, init_features) |> 
+  mutate(epoch = 1:n(),
+         complexity = case_when(init_features == 4 ~ "0.121",
+                                init_features == 8 ~ "0.485",
+                                init_features == 16 ~ "1.9",
+                                init_features == 32 ~ "7.8")) |> 
+  ungroup() |> 
+  filter(metric == "val_loss_original_scale")
+
+lake_best_models <- lake_loss_original |> 
+  group_by(buffer, weights, init_features) |> 
+  summarise(best_epoc = epoch[which.min(value)], partition = "valid", mae = min(value)) |> 
+  ungroup() |> 
+  mutate(weights_label = ifelse(weights == "dem", "DEM", "Random"),
+         model = paste0("'U-net'['", init_features, "-", weights_label,"']"))
+
+fig_data <- bind_rows(lake_best_models, baseline_models) |>
+  mutate(model = factor(model),
+         buffer_label = factor(paste0(buffer, "%"), levels = c("33%", "66%", "100%")),
+         Data = ifelse(partition == "all", "All", "Validation")) 
+
+figure_3 <- fig_data |> 
+  ggplot(aes(reorder(model, -mae), mae, fill=Data))+
+  geom_col(position = position_dodge(), col="black")+
+  scale_x_discrete(labels = function(l) parse(text=l))+
+  facet_grid(.~buffer_label)+
+  coord_flip()+
+  ylab("Mean absolute error (m)")+
+  xlab("Model")+
+  scale_fill_manual(values = c("All" = "grey", "Validation" = "white"))+
+  theme(strip.background = element_blank(), axis.text.y = element_text(hjust=0))
+
+figure_3
+
+ggsave("figures/figure_3.png", figure_3, width = 174, height = 100, units = "mm")
+
 
 #Figure 4
+#Histograms with performance metrics for best model and obs vs pred avg elevation (2x2 plot) for all lakes and test set only
+
+#Figure 5
 #Example of prediction with ground truth, best baseline and best deep learning model
 
 # library(rayshader)
@@ -195,21 +247,19 @@ dem_loss <- read_csv("data/dem_model_loss.csv")
 dem_loss_original <- dem_loss |> 
   group_by(metric, init_features) |> 
   mutate(epoch = 1:n(),
-         complexity = case_when(init_features == 4 ~ "0.121",
-                                init_features == 8 ~ "0.485",
-                                init_features == 16 ~ "1.9",
-                                init_features == 32 ~ "7.8")) |> 
+         Model = factor(paste0("'U-net'[", init_features,"]"))) |> 
   ungroup() |> 
   filter(metric == "val_loss_original_scale")
   
 fig_s1 <- dem_loss_original |> 
-  ggplot(aes(epoch, value, col=complexity))+
+  ggplot(aes(epoch, value, col=Model))+
   geom_line()+
-  scale_color_viridis_d(name="Model size", direction = -1)+
+  scale_color_viridis_d(direction = -1, labels = function(l) parse(text=l))+
   ylab("Mean absolute error (m)")+
   xlab("Epoch")+
   theme(legend.position = c(0.8, 0.8))+
-  coord_cartesian(ylim=c(2, 10))
+  coord_cartesian(ylim=c(2, 10))+
+  theme(legend.text.align = 0)
 
 fig_s1
 
@@ -217,36 +267,20 @@ ggsave("figures/figure_s1.png", fig_s1, width = 129, height = 100, units = "mm")
 
 #Figure S2
 #Validation loss during training of LAKE models
-lake_loss <- read_csv("data/lake_model_loss.csv")
-
-lake_loss_original <- lake_loss |> 
-  group_by(metric, buffer, weights, init_features) |> 
-  mutate(epoch = 1:n(),
-         complexity = case_when(init_features == 4 ~ "0.121",
-                                init_features == 8 ~ "0.485",
-                                init_features == 16 ~ "1.9",
-                                init_features == 32 ~ "7.8")) |> 
-  ungroup() |> 
-  filter(metric == "val_loss_original_scale")
-
-lake_best_models <- lake_loss_original |> 
-  group_by(buffer, weights, init_features) |> 
-  summarise(best_epoc = epoch[which.min(value)], best_loss = min(value)) |> 
-  ungroup()
-
 fig_s2 <- lake_loss_original |>
   mutate(buffer_label = factor(paste0(buffer, "%"), levels = c("33%", "66%", "100%")),
          weights_label = factor(ifelse(weights == "dem", "DEM", "Random"), levels=c("Random", "DEM")),
-         value = ifelse(value > 15, NA, value)) |> 
+         value = ifelse(value > 15, NA, value),
+         Model = factor(paste0("'U-net'[", init_features,"]"), levels=c("'U-net'[4]", "'U-net'[8]", "'U-net'[16]", "'U-net'[32]"))) |> 
   na.omit() |> 
-  ggplot(aes(epoch, value, col=complexity))+
+  ggplot(aes(epoch, value, col=Model))+
   geom_line()+
-  scale_color_viridis_d(name="Model size", direction = -1)+
+  scale_color_viridis_d(direction = -1, labels = function(l) parse(text=l))+
   ylab("Mean absolute error (m)")+
   xlab("Epoch")+
-  geom_hline(yintercept = min(lake_best_models$best_loss), linetype=2)+
+  geom_hline(yintercept = min(lake_best_models$mae), linetype=2)+
   facet_grid(weights_label~buffer_label, scales="free_y")+
-  theme(strip.background = element_blank())
+  theme(strip.background = element_blank(), legend.text.align = 0)
 
 fig_s2
 
