@@ -3,6 +3,8 @@ import numpy as np
 import cv2
 import albumentations as A
 from scipy.interpolate import griddata
+import pandas as pd
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 #Helper functions 
 
@@ -101,3 +103,19 @@ def baseline(dem, mask, mode):
 buffer_list = ['33', '66', '100']
 weights_list = ['random', 'dem']
 init_features_list = [4, 8, 16, 32]
+
+#Function for converting tensorboard logs to dataframe
+def log_to_df(path):
+    runlog_data = pd.DataFrame({"metric": [], "value": [], "step": []})
+    event_acc = EventAccumulator(path)
+    event_acc.Reload()
+    tags = event_acc.Tags()["scalars"]
+    for tag in tags:
+        event_list = event_acc.Scalars(tag)
+        values = list(map(lambda x: x.value, event_list))
+        step = list(map(lambda x: x.step, event_list))
+        r = {"metric": [tag] * len(step), "value": values, "step": step}
+        r = pd.DataFrame(r)
+        runlog_data = pd.concat([runlog_data, r])
+
+    return runlog_data

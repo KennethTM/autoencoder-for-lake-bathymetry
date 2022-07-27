@@ -22,9 +22,9 @@ with open(os.path.join("data/buffer_{}_percent".format(best_buffer), "lakes_dict
 #Prediction function for trained unet models, returning either 1d (values=True) or 2d array
 def predict_unet(dem, mask, model, values=True):
     
-    dem_scale = dem_scale(dem)
+    scaled = dem_scale(dem)
     
-    target_tensor = torch.from_numpy(dem_scale).unsqueeze(0)
+    target_tensor = torch.from_numpy(scaled).unsqueeze(0)
     mask_tensor = torch.from_numpy(mask).unsqueeze(0)
 
     input_tensor = target_tensor * (1-mask_tensor)
@@ -66,6 +66,10 @@ for p in ["train", "valid", "test"]:
         result_dict["corr"].append(corr)
         result_dict["obs_mean"].append(np.mean(obs))
         result_dict["pred_mean"].append(np.mean(pred))
+
+
+#Write grid to geotiff files with preds
+
 
 df = pd.DataFrame.from_dict(result_dict)
 df.to_csv("data/lake_model_performance.csv", index=False)
