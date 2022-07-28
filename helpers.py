@@ -5,6 +5,12 @@ import albumentations as A
 from scipy.interpolate import griddata
 import pandas as pd
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+import torch 
+
+#Consts
+buffer_list = ['33', '66', '100']
+weights_list = ['random', 'dem']
+init_features_list = [4, 8, 16, 32]
 
 #Helper functions 
 
@@ -100,10 +106,6 @@ def baseline(dem, mask, mode):
     else:
         return(1)
 
-buffer_list = ['33', '66', '100']
-weights_list = ['random', 'dem']
-init_features_list = [4, 8, 16, 32]
-
 #Function for converting tensorboard logs to dataframe
 def log_to_df(path):
     runlog_data = pd.DataFrame({"metric": [], "value": [], "step": []})
@@ -119,3 +121,24 @@ def log_to_df(path):
         runlog_data = pd.concat([runlog_data, r])
 
     return runlog_data
+
+#Prediction function for trained unet models, returning either 1d (values=True) or 2d array
+def predict_unet(dem, mask, model, values=True):
+    
+    scaled = dem_scale(dem)
+    
+    target_tensor = torch.from_numpy(scaled).unsqueeze(0)
+    mask_tensor = torch.from_numpy(mask).unsqueeze(0)
+
+    input_tensor = target_tensor * (1-mask_tensor)
+
+    with torch.no_grad():
+        xhat_tensor = model(input_tensor.unsqueeze(0), mask_tensor.unsqueeze(0))
+        
+    xhat_np = xhat_tensor.squeeze().numpy()
+    xhat_np_orig_scale = dem_inv_scale(xhat_np)
+
+    if values:
+        return(xhat_np_orig_scale[mask == 1])
+    else:
+        return(xhat_np_orig_scale)
