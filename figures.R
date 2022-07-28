@@ -265,26 +265,50 @@ ggsave("figures/figure_4.png", figure_4, width = 174, height = 160, units = "mm"
 #Figure 5
 #Example of prediction with ground truth, best baseline and best deep learning model
 
-# library(rayshader)
-# 
-# lake <- 22 #Borre Sø
-# lake_33 <- raster(paste0("data/buffer_33_percent/lakes_dem/lake_", lake, ".tif"))
-# lake_mask <- raster(paste0("data/buffer_33_percent/lakes_mask/lake_", lake, ".tif"))
-# 
-# lake_33_mask <- mask(lake_33, lake_mask, maskvalue=0)
-# lake_33_mask <- trim(lake_33_mask)
-# 
-# lake_mat <- raster_to_matrix(lake_33)
-# 
-# ray <- ray_shade(lake_mat, zscale=10)
-# amb <- ambient_shade(lake_mat, zscale=10)
-# 
-# lake_mat %>%
-#   sphere_shade(zscale=10, texture = "imhof1") %>%
-#   add_shadow(ray, 0.5) %>%
-#   add_shadow(amb, 0) %>%
-#   plot_3d(lake_mat, solid = TRUE, shadow = TRUE, water = TRUE, waterdepth = 20, zscale=10)
+#Look into jagged edges in 3D plots
+buffer_dir <- "data/buffer_100_percent/"
 
+lake <- 6 #58, 6, 78
+lake_obs <- raster(paste0(buffer_dir, "lakes_dem/lake_", lake, ".tif"))
+lake_mask <- raster(paste0(buffer_dir, "lakes_mask/lake_", lake, ".tif"))
+
+lake_obs_mask <- mask(lake_obs, lake_mask, maskvalue=0)
+lake_obs_mask <- trim(lake_obs_mask)
+
+lake_pred <- raster(paste0(buffer_dir, "lakes_pred/lake_", lake, ".tif"))
+lake_pred[lake_pred==0] <- NA
+lake_pred_mask <- trim(lake_pred)
+
+lake_cubic <- raster(paste0(buffer_dir, "lakes_cubic/lake_", lake, ".tif"))
+lake_cubic[lake_cubic==0] <- NA
+lake_cubic_mask <- trim(lake_cubic)
+
+lake_obs_mat <- raster_to_matrix(lake_obs_mask)
+lake_pred_mat <- raster_to_matrix(lake_pred_mask)
+lake_cubic_mat <- raster_to_matrix(lake_cubic_mask)
+
+bathy_3d(lake_obs_mat)
+render_snapshot(paste0("figures/figure_5/fig_", lake, "_obs.png"), clear = TRUE)
+
+bathy_3d(lake_pred_mat)
+render_snapshot(paste0("figures/figure_5/fig_", lake, "_pred.png"), clear = TRUE)
+
+bathy_3d(lake_cubic_mat)
+render_snapshot(paste0("figures/figure_5/fig_", lake, "_cubic.png"), clear = TRUE)
+
+#Create rows and assemble figure
+row_1 <- image_row(6)
+row_2 <- image_row(58)
+row_3 <- image_row(78)
+all_rows <- list(unlist(row_1, recursive = TRUE),
+                 unlist(row_2, recursive = TRUE),
+                 unlist(row_3, recursive = TRUE))
+
+figure_5 <- wrap_plots(row_1, nrow=1)/wrap_plots(row_2, nrow=1)/wrap_plots(row_3, nrow=1)+plot_annotation(tag_levels = "a")
+
+figure_5
+
+ggsave("figures/figure_5.png", figure_5, width = 174, height = 120, units = "mm")
 
 #Supplementary material
 #Figure S1
