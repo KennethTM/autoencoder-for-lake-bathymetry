@@ -216,8 +216,9 @@ ggsave("figures/figure_3.png", figure_3, width = 174, height = 100, units = "mm"
 #Histograms with performance metrics for best model and obs vs pred avg elevation (2x2 plot) for all lakes and test set only
 model_performance <- read_csv("data/lake_model_performance.csv")
 
-all_and_test <- bind_rows(add_column(model_performance, Data = "All"),
-          add_column(model_performance[model_performance$partition == "test",], Data = "Test"))
+all_and_test <- bind_rows(
+  add_column(model_performance, Data = "All"),
+  add_column(model_performance[model_performance$partition == "test",], Data = "Test"))
 
 fig_4_a <- all_and_test |> 
   ggplot(aes(mae, fill=Data))+
@@ -244,7 +245,7 @@ fig_4_c <- all_and_test |>
   xlab("Pearson correlation coefficient")+
   ylab("Count")+
   scale_y_continuous(expand = expansion(mult = c(0, 0.05)))+
-  scale_x_continuous(expand = expansion(mult = c(0.05, 0.05)), breaks = seq(0, 10, 2))
+  scale_x_continuous(expand = expansion(mult = c(0.05, 0.05)), breaks = seq(-0.4, 1, 0.2))
 
 fig_4_d <- all_and_test |> 
   ggplot(aes(obs_mean, pred_mean, fill=Data))+
