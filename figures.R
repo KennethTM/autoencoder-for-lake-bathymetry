@@ -2,10 +2,10 @@
 
 source("libs_and_funcs.R")
 
-#Table 1
-#Lake summary statistics
 lakes <- read_csv("data/lakes_summary_partition.csv")
 
+#Table 1
+#Lake summary statistics
 table_1 <- lakes |> 
   mutate(area_ha = area*10^-4) |> #area from m2 to ha
   dplyr::select(area_ha, elev, mean_depth, max_depth) |> 
@@ -26,6 +26,11 @@ write_csv(table_1, "figures/table_1.csv")
 dem_coarse <- getData(name = "alt", path = "data/", country="DNK")
 dem_course_crop <- trim(crop(dem_coarse, extent(c(8, 14, 54.5, 57.8))))
 dem_utm <- projectRaster(dem_course_crop, crs = dk_epsg, method="bilinear")
+
+#Fix min/max dem vals to match 10m resolution raster
+dem_utm[which.max(dem_utm[])] <- 171.8
+dem_utm[which.min(dem_utm[])] <- -18.4
+
 dem_df <- as.data.frame(dem_utm, xy=TRUE)
 
 dk_iceage <- st_read("data/dk_iceage.sqlite")
@@ -35,7 +40,6 @@ dk_iceage_cut <- dk_iceage |>
   st_intersection(dk_border) |> 
   st_collection_extract("LINESTRING")
 
-lakes <- read_csv("data/lakes_summary_partition.csv")
 lakes_sf <- lakes |> 
   st_as_sf(crs=dk_epsg, coords=c("x", "y"))
 
@@ -200,6 +204,7 @@ fig_data <- bind_rows(lake_best_models, baseline_models) |>
 figure_3 <- fig_data |> 
   ggplot(aes(reorder(model, -mae), mae, fill=Data))+
   geom_col(position = position_dodge(), col="black")+
+  geom_hline(yintercept = min(lake_best_models$mae), linetype=2)+
   scale_x_discrete(labels = function(l) parse(text=l))+
   facet_grid(.~buffer_label)+
   coord_flip()+
@@ -269,19 +274,27 @@ ggsave("figures/figure_4.png", figure_4, width = 174, height = 160, units = "mm"
 #Look into jagged edges in 3D plots
 buffer_dir <- "data/buffer_100_percent/"
 
-lake <- 6 #58, 6, 78
+lake <- 78 #58, 6, 78
 lake_obs <- raster(paste0(buffer_dir, "lakes_dem/lake_", lake, ".tif"))
 lake_mask <- raster(paste0(buffer_dir, "lakes_mask/lake_", lake, ".tif"))
 
+lake_mask_na <- lake_mask
+lake_mask_na[lake_mask_na == 0] <- NA
+lake_boundary <- boundaries(lake_mask_na, "outer")
+lake_elev <- lakes[lakes$lake_id == lake, ]$elev
+
 lake_obs_mask <- mask(lake_obs, lake_mask, maskvalue=0)
+lake_obs_mask[lake_boundary==1] <- lake_elev
 lake_obs_mask <- trim(lake_obs_mask)
 
 lake_pred <- raster(paste0(buffer_dir, "lakes_pred/lake_", lake, ".tif"))
 lake_pred[lake_pred==0] <- NA
+lake_pred[lake_boundary==1] <- lakes[lakes$lake_id == lake, ]$elev
 lake_pred_mask <- trim(lake_pred)
 
 lake_cubic <- raster(paste0(buffer_dir, "lakes_cubic/lake_", lake, ".tif"))
 lake_cubic[lake_cubic==0] <- NA
+lake_cubic[lake_boundary==1] <- lakes[lakes$lake_id == lake, ]$elev
 lake_cubic_mask <- trim(lake_cubic)
 
 lake_obs_mat <- raster_to_matrix(lake_obs_mask)

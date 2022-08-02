@@ -34,7 +34,7 @@ bathy_3d <- function(matrix){
     height_shade(texture = bu_pn_pal(256)) %>%
     add_shadow(ray, 0.5) %>%
     add_shadow(amb, 0.2)  %>%
-    plot_3d(matrix, zscale = 1, fov = 0, theta = 200, phi = 30, 
+    plot_3d(matrix, zscale = 1, fov = 0, theta = 200, phi = 30, shadow=FALSE,
             windowsize = c(1000, 800), zoom = 0.75, solid = FALSE)
 }
 
