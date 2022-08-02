@@ -38,11 +38,51 @@ bathy_3d <- function(matrix){
             windowsize = c(1000, 800), zoom = 0.75, solid = FALSE)
 }
 
+bathy_3d_compare <- function(lake, subfolder){
+  
+  buffer_dir <- "data/buffer_100_percent/"
+  lake_obs <- raster(paste0(buffer_dir, "lakes_dem/lake_", lake, ".tif"))
+  lake_mask <- raster(paste0(buffer_dir, "lakes_mask/lake_", lake, ".tif"))
+  
+  lake_mask_na <- lake_mask
+  lake_mask_na[lake_mask_na == 0] <- NA
+  lake_boundary <- boundaries(lake_mask_na, "outer")
+  lake_elev <- lakes[lakes$lake_id == lake, ]$elev
+  
+  lake_obs_mask <- mask(lake_obs, lake_mask, maskvalue=0)
+  lake_obs_mask[lake_boundary==1] <- lake_elev
+  lake_obs_mask <- trim(lake_obs_mask)
+  
+  lake_pred <- raster(paste0(buffer_dir, "lakes_pred/lake_", lake, ".tif"))
+  lake_pred[lake_pred==0] <- NA
+  lake_pred[lake_boundary==1] <- lakes[lakes$lake_id == lake, ]$elev
+  lake_pred_mask <- trim(lake_pred)
+  
+  lake_cubic <- raster(paste0(buffer_dir, "lakes_cubic/lake_", lake, ".tif"))
+  lake_cubic[lake_cubic==0] <- NA
+  lake_cubic[lake_boundary==1] <- lakes[lakes$lake_id == lake, ]$elev
+  lake_cubic_mask <- trim(lake_cubic)
+  
+  lake_obs_mat <- raster_to_matrix(lake_obs_mask)
+  lake_pred_mat <- raster_to_matrix(lake_pred_mask)
+  lake_cubic_mat <- raster_to_matrix(lake_cubic_mask)
+  
+  bathy_3d(lake_obs_mat)
+  render_snapshot(paste0("figures/", subfolder, "/fig_", lake, "_obs.png"), clear = TRUE)
+  
+  bathy_3d(lake_pred_mat)
+  render_snapshot(paste0("figures/", subfolder, "/fig_", lake, "_pred.png"), clear = TRUE)
+  
+  bathy_3d(lake_cubic_mat)
+  render_snapshot(paste0("figures/", subfolder, "/fig_", lake, "_cubic.png"), clear = TRUE)
+  
+}
+
 #Create row of images which can be assembled to a figure
-image_row <- function(lake){
-  obs_path <- paste0("figures/figure_5/fig_", lake, "_obs.png")
-  pred_path <- paste0("figures/figure_5/fig_", lake, "_pred.png")
-  cubic_path <- paste0("figures/figure_5/fig_", lake, "_cubic.png")
+image_row <- function(lake, subfolder){
+  obs_path <- paste0("figures/", subfolder, "/fig_", lake, "_obs.png")
+  pred_path <- paste0("figures/", subfolder, "/fig_", lake, "_pred.png")
+  cubic_path <- paste0("figures/", subfolder, "/fig_", lake, "_cubic.png")
   
   obs_img <- image_read(obs_path)
   pred_img <- image_read(pred_path)

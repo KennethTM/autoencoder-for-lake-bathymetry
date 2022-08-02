@@ -272,48 +272,14 @@ ggsave("figures/figure_4.png", figure_4, width = 174, height = 160, units = "mm"
 #Example of prediction with ground truth, best baseline and best deep learning model
 
 #Look into jagged edges in 3D plots
-buffer_dir <- "data/buffer_100_percent/"
-
-lake <- 78 #58, 6, 78
-lake_obs <- raster(paste0(buffer_dir, "lakes_dem/lake_", lake, ".tif"))
-lake_mask <- raster(paste0(buffer_dir, "lakes_mask/lake_", lake, ".tif"))
-
-lake_mask_na <- lake_mask
-lake_mask_na[lake_mask_na == 0] <- NA
-lake_boundary <- boundaries(lake_mask_na, "outer")
-lake_elev <- lakes[lakes$lake_id == lake, ]$elev
-
-lake_obs_mask <- mask(lake_obs, lake_mask, maskvalue=0)
-lake_obs_mask[lake_boundary==1] <- lake_elev
-lake_obs_mask <- trim(lake_obs_mask)
-
-lake_pred <- raster(paste0(buffer_dir, "lakes_pred/lake_", lake, ".tif"))
-lake_pred[lake_pred==0] <- NA
-lake_pred[lake_boundary==1] <- lakes[lakes$lake_id == lake, ]$elev
-lake_pred_mask <- trim(lake_pred)
-
-lake_cubic <- raster(paste0(buffer_dir, "lakes_cubic/lake_", lake, ".tif"))
-lake_cubic[lake_cubic==0] <- NA
-lake_cubic[lake_boundary==1] <- lakes[lakes$lake_id == lake, ]$elev
-lake_cubic_mask <- trim(lake_cubic)
-
-lake_obs_mat <- raster_to_matrix(lake_obs_mask)
-lake_pred_mat <- raster_to_matrix(lake_pred_mask)
-lake_cubic_mat <- raster_to_matrix(lake_cubic_mask)
-
-bathy_3d(lake_obs_mat)
-render_snapshot(paste0("figures/figure_5/fig_", lake, "_obs.png"), clear = TRUE)
-
-bathy_3d(lake_pred_mat)
-render_snapshot(paste0("figures/figure_5/fig_", lake, "_pred.png"), clear = TRUE)
-
-bathy_3d(lake_cubic_mat)
-render_snapshot(paste0("figures/figure_5/fig_", lake, "_cubic.png"), clear = TRUE)
+bathy_3d_compare(78, subfolder = "figure_5")
+bathy_3d_compare(6, subfolder = "figure_5")
+bathy_3d_compare(58, subfolder = "figure_5")
 
 #Create rows and assemble figure
-row_1 <- image_row(6)
-row_2 <- image_row(58)
-row_3 <- image_row(78)
+row_1 <- image_row(6, subfolder = "figure_5")
+row_2 <- image_row(58, subfolder = "figure_5")
+row_3 <- image_row(78, subfolder = "figure_5")
 all_rows <- list(unlist(row_1, recursive = TRUE),
                  unlist(row_2, recursive = TRUE),
                  unlist(row_3, recursive = TRUE))
@@ -326,6 +292,9 @@ ggsave("figures/figure_5.png", figure_5, width = 174, height = 120, units = "mm"
 
 #Supplementary material
 #Figure S1
+
+
+#Figure S2
 #Validation loss during training of DEM models
 dem_loss <- read_csv("data/dem_model_loss.csv")
 
@@ -336,7 +305,7 @@ dem_loss_original <- dem_loss |>
   ungroup() |> 
   filter(metric == "val_loss_original_scale")
   
-fig_s1 <- dem_loss_original |> 
+fig_s2 <- dem_loss_original |> 
   ggplot(aes(epoch, value, col=Model))+
   geom_line()+
   scale_color_viridis_d(direction = -1, labels = function(l) parse(text=l))+
@@ -346,13 +315,13 @@ fig_s1 <- dem_loss_original |>
   coord_cartesian(ylim=c(2, 10))+
   theme(legend.text.align = 0)
 
-fig_s1
+fig_s2
 
-ggsave("figures/figure_s1.png", fig_s1, width = 129, height = 100, units = "mm")
+ggsave("figures/figure_s2.png", fig_s2, width = 129, height = 100, units = "mm")
 
-#Figure S2
+#Figure S3
 #Validation loss during training of LAKE models
-fig_s2 <- lake_loss_original |>
+fig_s3 <- lake_loss_original |>
   mutate(buffer_label = factor(paste0(buffer, "%"), levels = c("33%", "66%", "100%")),
          weights_label = factor(ifelse(weights == "dem", "DEM", "Random"), levels=c("Random", "DEM")),
          value = ifelse(value > 15, NA, value),
@@ -367,6 +336,23 @@ fig_s2 <- lake_loss_original |>
   facet_grid(weights_label~buffer_label, scales="free_y")+
   theme(strip.background = element_blank(), legend.text.align = 0)
 
-fig_s2
+fig_s3
 
-ggsave("figures/figure_s2.png", fig_s2, width = 174, height = 120, units = "mm")
+ggsave("figures/figure_s3.png", fig_s3, width = 174, height = 120, units = "mm")
+
+#Figure S4
+#Example of poor model performance (two highest test MAE)
+bathy_3d_compare(57, subfolder = "figure_s4")
+bathy_3d_compare(45, subfolder = "figure_s4")
+
+#Create rows and assemble figure
+row_1 <- image_row(57, subfolder = "figure_s4")
+row_2 <- image_row(45, subfolder = "figure_s4")
+all_rows <- list(unlist(row_1, recursive = TRUE),
+                 unlist(row_2, recursive = TRUE))
+
+figure_s4 <- wrap_plots(row_1, nrow=1)/wrap_plots(row_2, nrow=1)+plot_annotation(tag_levels = "a")
+
+figure_s4
+
+ggsave("figures/figure_s4.png", figure_s4, width = 174, height = 80, units = "mm")
