@@ -24,7 +24,7 @@ def main(init_features):
 
     #Load mask data
     random_mask = np.load("data/lakes_random.npz")
-    mask_data = random_mask["mask"]
+    mask_data = random_mask["mask"].astype("float32")
 
     random_mask_idx = random.choices(range(mask_data.shape[0]), k=valid.shape[0])
     valid_mask = mask_data[random_mask_idx]
