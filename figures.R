@@ -210,7 +210,7 @@ figure_3 <- fig_data |>
   coord_flip()+
   ylab("Mean absolute error (m)")+
   xlab("Model")+
-  scale_fill_manual(values = c("All" = "grey", "Validation" = "white"))+
+  scale_fill_manual(values = partition_colors)+
   theme(strip.background = element_blank(), axis.text.y = element_text(hjust=0))
 
 figure_3
@@ -228,7 +228,7 @@ all_and_test <- bind_rows(
 fig_4_a <- all_and_test |> 
   ggplot(aes(mae, fill=Data))+
   geom_histogram(position = "identity", col="black")+
-  scale_fill_manual(values=c("All" ="grey", "Test" ="white"))+
+  scale_fill_manual(values = partition_colors)+
   xlab("Mean absolute error (m)")+
   ylab("Count")+
   scale_y_continuous(expand = expansion(mult = c(0, 0.05)))+
@@ -237,7 +237,7 @@ fig_4_a <- all_and_test |>
 fig_4_b <- all_and_test |> 
   ggplot(aes(rmse, fill=Data))+
   geom_histogram(position = "identity", col="black")+
-  scale_fill_manual(values=c("All" ="grey", "Test" ="white"))+
+  scale_fill_manual(values = partition_colors)+
   xlab("Root mean squared error (m)")+
   ylab("Count")+
   scale_y_continuous(expand = expansion(mult = c(0, 0.05)))+
@@ -246,7 +246,7 @@ fig_4_b <- all_and_test |>
 fig_4_c <- all_and_test |> 
   ggplot(aes(corr, fill=Data))+
   geom_histogram(position = "identity", col="black")+
-  scale_fill_manual(values=c("All" ="grey", "Test" ="white"))+
+  scale_fill_manual(values = partition_colors)+
   xlab("Pearson correlation coefficient")+
   ylab("Count")+
   scale_y_continuous(expand = expansion(mult = c(0, 0.05)))+
@@ -258,7 +258,7 @@ fig_4_d <- all_and_test |>
   geom_point(shape=21)+
   ylim(-6, 80)+
   xlim(-6, 80)+
-  scale_fill_manual(values=c("All" ="grey", "Test" ="white"))+
+  scale_fill_manual(values = partition_colors)+
   xlab("Observed mean elevation (m)")+
   ylab("Predicted mean elevation (m)")
 
@@ -280,9 +280,7 @@ bathy_3d_compare(58, subfolder = "figure_5")
 row_1 <- image_row(6, subfolder = "figure_5")
 row_2 <- image_row(58, subfolder = "figure_5")
 row_3 <- image_row(78, subfolder = "figure_5")
-all_rows <- list(unlist(row_1, recursive = TRUE),
-                 unlist(row_2, recursive = TRUE),
-                 unlist(row_3, recursive = TRUE))
+all_rows <- list(unlist(row_1), unlist(row_2), unlist(row_3))
 
 figure_5 <- wrap_plots(row_1, nrow=1)/wrap_plots(row_2, nrow=1)/wrap_plots(row_3, nrow=1)+plot_annotation(tag_levels = "a")
 
@@ -292,6 +290,55 @@ ggsave("figures/figure_5.png", figure_5, width = 174, height = 120, units = "mm"
 
 #Supplementary material
 #Figure S1
+array_paths <- list.files("figures/figure_s1/", full.names = TRUE, pattern = "*.npy")
+array_list <- lapply(array_paths, \(x){npyLoad(x) |> melt()}) 
+names(array_list) <- gsub("*.npy", "", basename(array_paths))
+
+#a) 256x256 DEM observed, b) DEM with hole, c) DEM predicted, d) difference between obs and pred for mask
+
+fig_s1_a <- ggplot()+
+  geom_raster(data=array_list$target_0, aes(Var1, Var2, fill=value), show.legend = TRUE)+
+  scale_fill_continuous_sequential(palette="Terrain 2", rev=FALSE, na.value = NA, name="Elevation (m)", limits=c(-20, 120))+
+  scale_x_continuous(expand = c(0,0))+
+  scale_y_continuous(expand = c(0,0))+
+  theme_void()+
+  theme(panel.border = element_rect(colour = "black", fill=NA))
+
+array_list$target_0$hole <- array_list$target_0$value
+array_list$target_0$hole[array_list$mask_0$value == 1] <- NA
+
+fig_s1_b <- ggplot()+
+  geom_raster(data=array_list$target_0, aes(Var1, Var2, fill=hole), show.legend = TRUE)+
+  scale_fill_continuous_sequential(palette="Terrain 2", rev=FALSE, na.value = NA, name="Elevation (m)", limits=c(-20, 120))+
+  scale_x_continuous(expand = c(0,0))+
+  scale_y_continuous(expand = c(0,0))+
+  theme_void()+
+  theme(panel.border = element_rect(colour = "black", fill=NA))
+
+fig_s1_c <- ggplot()+
+  geom_raster(data=array_list$predicted_0, aes(Var1, Var2, fill=value), show.legend = TRUE)+
+  scale_fill_continuous_sequential(palette="Terrain 2", rev=FALSE, na.value = NA, name="Elevation (m)", limits=c(-20, 120))+
+  scale_x_continuous(expand = c(0,0))+
+  scale_y_continuous(expand = c(0,0))+
+  theme_void()+
+  theme(panel.border = element_rect(colour = "black", fill=NA))
+
+array_list$target_0$difference <- (array_list$target_0$value - array_list$predicted_0$value)
+array_list$target_0$difference[array_list$mask_0$value == 0] <- NA
+
+fig_s1_d <- ggplot()+
+  geom_raster(data=array_list$target_0, aes(Var1, Var2, fill=difference), show.legend = TRUE)+
+  scale_fill_continuous_diverging(palette="Blue-Red", rev=FALSE, na.value = NA, name="Difference (m)")+
+  scale_x_continuous(expand = c(0,0))+
+  scale_y_continuous(expand = c(0,0))+
+  theme_void()+
+  theme(panel.border = element_rect(colour = "black", fill=NA))
+
+figure_s1 <- fig_s1_a + fig_s1_b + fig_s1_c + fig_s1_d + plot_annotation(tag_levels = "a")+plot_layout(guides="collect", nrow = 2)
+
+figure_s1
+
+ggsave("figures/figure_s1.png", figure_s1, width = 174, height = 140, units = "mm")
 
 
 #Figure S2
@@ -348,8 +395,7 @@ bathy_3d_compare(45, subfolder = "figure_s4")
 #Create rows and assemble figure
 row_1 <- image_row(57, subfolder = "figure_s4")
 row_2 <- image_row(45, subfolder = "figure_s4")
-all_rows <- list(unlist(row_1, recursive = TRUE),
-                 unlist(row_2, recursive = TRUE))
+all_rows <- list(unlist(row_1), unlist(row_2))
 
 figure_s4 <- wrap_plots(row_1, nrow=1)/wrap_plots(row_2, nrow=1)+plot_annotation(tag_levels = "a")
 

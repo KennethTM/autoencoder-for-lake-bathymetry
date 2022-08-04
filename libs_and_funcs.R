@@ -1,6 +1,7 @@
 library(raster);library(sf);library(tidyverse);library(png);library(readxl);
 library(patchwork);library(colorspace);library(ggspatial);library(RColorBrewer);
-library(rayshader);library(png);library(grid);library(magick)
+library(rayshader);library(png);library(grid);library(magick);library(RcppCNPy);
+library(reshape2)
 #;library(gdalUtils)
 
 set.seed(9999)
@@ -20,6 +21,9 @@ theme_pub <- theme_bw() +
         axis.text = element_text(colour = "black"), 
         strip.background = element_rect(fill = "white"))
 theme_set(theme_pub)
+
+#Figure colors for dataset partitions
+partition_colors <- c("All" ="dodgerblue", "Validation" = "white", "Test" ="white")
 
 #3D plot of lake bathymetry maps
 bathy_3d <- function(matrix){
