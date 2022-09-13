@@ -1,4 +1,4 @@
-from helpers import score_rmse, score_mae, score_corr, dem_scale, dem_inv_scale, predict_unet
+from helpers import score_rmse, score_mae, score_corr, predict_unet
 import os 
 import pickle
 import pandas as pd
@@ -8,7 +8,7 @@ import rasterio as rio
 
 #Evaluate best combination of buffer and Unet model on all observations
 def main():
-    result_dict = {"buffer": [], "partition": [], "lake_id": [], "rmse": [], "mae": [], "corr": [], "obs_mean": [], "pred_mean": []}
+    result_dict = {"buffer": [], "partition": [], "lake_id": [], "rmse": [], "mae": [], "corr": [], "obs_mean": [], "pred_mean": [], "pred_zmean": [], "pred_zmax": []}
 
     best_buffer = '100'
     best_buffer_dir = "data/buffer_{}_percent".format(best_buffer)
@@ -29,6 +29,7 @@ def main():
             id = i["id"]
             dem = i["lake"]
             mask = i["mask"]
+            elev = i["surface"]
             obs = dem[mask == 1]
 
             pred = predict_unet(dem, mask, best_model, values=True)
@@ -45,6 +46,8 @@ def main():
             result_dict["corr"].append(corr)
             result_dict["obs_mean"].append(np.mean(obs))
             result_dict["pred_mean"].append(np.mean(pred))
+            result_dict["pred_zmean"].append(np.mean(elev-pred))
+            result_dict["pred_zmax"].append(np.max(elev-pred))
 
             #Write predicted lake bathymetry to file
             pred_grid = predict_unet(dem, mask, best_model, values=False)
