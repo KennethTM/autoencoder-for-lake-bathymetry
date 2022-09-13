@@ -14,3 +14,6 @@ data/buffer_*_percent/
 data/lakes_random/
 data/*.zip
 data/*aux.xml
+examples/lake_sliv.tif
+examples/lake_fuglsang.tif
+examples/example_predicted.tif
