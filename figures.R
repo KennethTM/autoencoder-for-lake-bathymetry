@@ -399,14 +399,14 @@ ggsave("figures/figure_s4.png", figure_s4, width = 174, height = 80, units = "mm
 #Predict versus observed zmax and zmean
 obs_pred_data <- model_performance |> 
   left_join(lakes) |> 
-  mutate(Data = factor(str_to_title(partition), levels = c("Train", "Valid", "Test")))
+  mutate(Partition = factor(str_to_title(partition), levels = c("Train", "Valid", "Test")))
 
 #MAE scores
 mean(abs(obs_pred_data$pred_zmean - obs_pred_data$mean_depth))
 mean(abs(obs_pred_data$pred_zmax - obs_pred_data$max_depth))
 
 fig_s5_a <- obs_pred_data |> 
-  ggplot(aes(mean_depth, pred_zmean, col = Data))+
+  ggplot(aes(mean_depth, pred_zmean, col = Partition))+
   geom_abline(intercept = 0, slope = 1, linetype=3)+
   geom_point()+
   scale_color_viridis_d(direction = -1)+
@@ -416,7 +416,7 @@ fig_s5_a <- obs_pred_data |>
   ylab("Predicted maen depth (m)")
 
 fig_s5_b <- obs_pred_data |> 
-  ggplot(aes(max_depth, pred_zmax, col = Data))+
+  ggplot(aes(max_depth, pred_zmax, col = Partition))+
   geom_abline(intercept = 0, slope = 1, linetype=3)+
   geom_point()+
   scale_color_viridis_d(direction = -1)+

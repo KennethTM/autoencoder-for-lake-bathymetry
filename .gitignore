@@ -13,3 +13,4 @@ lightning_logs/
 data/buffer_*_percent/
 data/lakes_random/
 data/*.zip
+data/*aux.xml
