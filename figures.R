@@ -3,6 +3,7 @@
 source("libs_and_funcs.R")
 
 lakes <- read_csv("data/lakes_summary_partition.csv")
+model_performance <- read_csv("data/lake_model_performance.csv")
 
 #Table 1
 #Lake summary statistics
@@ -219,8 +220,6 @@ ggsave("figures/figure_3.png", figure_3, width = 174, height = 100, units = "mm"
 
 #Figure 4
 #Histograms with performance metrics for best model and obs vs pred avg elevation (2x2 plot) for all lakes and test set only
-model_performance <- read_csv("data/lake_model_performance.csv")
-
 model_performance_test <- model_performance |> 
   filter(partition == "test")
 
@@ -395,3 +394,39 @@ figure_s4 <- wrap_plots(row_1, nrow=1)/wrap_plots(row_2, nrow=1)+plot_annotation
 figure_s4
 
 ggsave("figures/figure_s4.png", figure_s4, width = 174, height = 80, units = "mm")
+
+#Figure S5
+#Predict versus observed zmax and zmean
+obs_pred_data <- model_performance |> 
+  left_join(lakes) |> 
+  mutate(Data = factor(str_to_title(partition), levels = c("Train", "Valid", "Test")))
+
+#MAE scores
+mean(abs(obs_pred_data$pred_zmean - obs_pred_data$mean_depth))
+mean(abs(obs_pred_data$pred_zmax - obs_pred_data$max_depth))
+
+fig_s5_a <- obs_pred_data |> 
+  ggplot(aes(mean_depth, pred_zmean, col = Data))+
+  geom_abline(intercept = 0, slope = 1, linetype=3)+
+  geom_point()+
+  scale_color_viridis_d(direction = -1)+
+  ylim(-0.05, 20)+
+  xlim(-0.05, 20)+
+  xlab("Observed mean depth (m)")+
+  ylab("Predicted maen depth (m)")
+
+fig_s5_b <- obs_pred_data |> 
+  ggplot(aes(max_depth, pred_zmax, col = Data))+
+  geom_abline(intercept = 0, slope = 1, linetype=3)+
+  geom_point()+
+  scale_color_viridis_d(direction = -1)+
+  ylim(0, 40)+
+  xlim(0, 40)+
+  xlab("Observed maximum depth (m)")+
+  ylab("Predicted maximum depth (m)")
+
+figure_s5 <- fig_s5_a + fig_s5_b + plot_annotation(tag_levels = "a")+plot_layout(guides="collect", nrow=2)
+
+figure_s5
+
+ggsave("figures/figure_s5.png", figure_s5, width = 129, height = 180, units = "mm")
