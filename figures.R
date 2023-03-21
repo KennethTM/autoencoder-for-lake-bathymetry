@@ -265,6 +265,25 @@ ggsave("figures/figure_4.png", figure_4, width = 174, height = 160, units = "mm"
 #Figure 5
 #Example of prediction with ground truth, best baseline and best deep learning model
 
+#Create legend separately for figure 5
+figure_5_legend <- function(){
+  col_low <- brewer.pal(5, "Blues")[5]
+  col_high <- brewer.pal(8, "Blues")[2]
+  bu_pn_pal <- colorRampPalette(c(col_low, col_high))
+  
+  z <- matrix(1:100,nrow=1)
+  x <- 1
+  y <- 1:100 
+  image(x,y,z,col=bu_pn_pal(100), axes=FALSE, xlab="", ylab="", font.main = 1, main="Relative depth")
+  axis(2, c(1, 100), labels=c("Deep", "Shallow"), las=1)
+}
+
+png("figures/figure_5/legend.png", width = 45, height = 150, units="mm", res=300)
+figure_5_legend()
+dev.off()
+
+legend <- readPNG("figures/figure_5/legend.png")
+
 #Look into jagged edges in 3D plots
 bathy_3d_compare(78, subfolder = "figure_5")
 bathy_3d_compare(6, subfolder = "figure_5")
@@ -276,7 +295,11 @@ row_2 <- image_row(58, subfolder = "figure_5")
 row_3 <- image_row(78, subfolder = "figure_5")
 all_rows <- list(unlist(row_1), unlist(row_2), unlist(row_3))
 
-figure_5 <- wrap_plots(row_1, nrow=1)/wrap_plots(row_2, nrow=1)/wrap_plots(row_3, nrow=1)+plot_annotation(tag_levels = "a")
+figure_5 <- (wrap_plots(row_1, nrow=1)+plot_spacer())/
+  (wrap_plots(row_2, nrow=1)+plot_spacer())/
+  (wrap_plots(row_3, nrow=1)+plot_spacer())/
+  plot_annotation(tag_levels = "a")+
+  inset_element(rasterGrob(legend), 0.8, 0.25, 1, 3, ignore_tag = TRUE)
 
 figure_5
 
