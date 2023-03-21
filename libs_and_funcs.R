@@ -23,7 +23,7 @@ theme_pub <- theme_bw() +
 theme_set(theme_pub)
 
 #3D plot of lake bathymetry maps
-bathy_3d <- function(matrix){
+bathy_3d <- function(matrix, theta = 200){
   col_low <- brewer.pal(5, "Blues")[5]
   col_high <- brewer.pal(8, "Blues")[2]
   bu_pn_pal <- colorRampPalette(c(col_low, col_high))
@@ -35,8 +35,8 @@ bathy_3d <- function(matrix){
     height_shade(texture = bu_pn_pal(256)) %>%
     add_shadow(ray, 0.5) %>%
     add_shadow(amb, 0.2)  %>%
-    plot_3d(matrix, zscale = 1, fov = 0, theta = 200, phi = 30, shadow=FALSE,
-            windowsize = c(1000, 800), zoom = 0.75, solid = FALSE)
+    plot_3d(matrix, zscale = 1, fov = 0, theta = theta, phi = 25, shadow=FALSE,
+            windowsize = c(1000, 800), zoom = 0.6, solid = FALSE)
 }
 
 bathy_3d_compare <- function(lake, subfolder){
@@ -68,13 +68,15 @@ bathy_3d_compare <- function(lake, subfolder){
   lake_pred_mat <- raster_to_matrix(lake_pred_mask)
   lake_cubic_mat <- raster_to_matrix(lake_cubic_mask)
   
-  bathy_3d(lake_obs_mat)
+  theta <- ifelse(lake %in% c(78, 45), 245, 200) #adjust rotation of particular lakes
+  
+  bathy_3d(lake_obs_mat, theta = theta)
   render_snapshot(paste0("figures/", subfolder, "/fig_", lake, "_obs.png"), clear = TRUE)
   
-  bathy_3d(lake_pred_mat)
+  bathy_3d(lake_pred_mat, theta = theta)
   render_snapshot(paste0("figures/", subfolder, "/fig_", lake, "_pred.png"), clear = TRUE)
   
-  bathy_3d(lake_cubic_mat)
+  bathy_3d(lake_cubic_mat, theta = theta)
   render_snapshot(paste0("figures/", subfolder, "/fig_", lake, "_cubic.png"), clear = TRUE)
   
 }
@@ -96,4 +98,17 @@ image_row <- function(lake, subfolder){
   row <- lapply(list(obs_grob, pred_grob, cubic_grob), wrap_elements)
   
   return(row)
+}
+
+#Function to create standalone legend for figure 5
+figure_5_legend <- function(){
+  col_low <- brewer.pal(5, "Blues")[5]
+  col_high <- brewer.pal(8, "Blues")[2]
+  bu_pn_pal <- colorRampPalette(c(col_low, col_high))
+  
+  z <- matrix(1:100,nrow=1)
+  x <- 1
+  y <- 1:100 
+  image(x,y,z,col=bu_pn_pal(100), axes=FALSE, xlab="", ylab="", font.main = 1, main="Relative depth")
+  axis(2, c(1, 100), labels=c("Deep", "Shallow"), las=1)
 }
