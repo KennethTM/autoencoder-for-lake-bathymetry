@@ -57,6 +57,7 @@ figure_1 <- ggplot()+
 figure_1
 
 ggsave("figures/figure_1.png", figure_1, width = 84, height = 110, units = "mm")
+ggsave("figures/figure_1.tiff", figure_1, width = 84, height = 110, units = "mm")
 
 #Figure 2
 #Overview of DEM clipout method and an example observed/predicted lake bathymetry
@@ -90,7 +91,7 @@ observed[lake_mask == 0] <- NA
 observed_df <- as.data.frame(observed, xy=TRUE)
 
 predicted_100 <- raster(paste0("data/buffer_100_percent/lakes_pred/lake_", lake, ".tif"))
-predicted <- crop(predicted, lake_33)
+predicted <- crop(predicted_100, lake_33)
 predicted[lake_mask == 0] <- NA
 predicted <- lake_surface - predicted
 predicted_df <- as.data.frame(predicted, xy=TRUE)
@@ -162,6 +163,7 @@ figure_2 <- fig_2_a / (fig_2_b + fig_2_c) / (fig_2_d + fig_2_e) + plot_annotatio
 figure_2
 
 ggsave("figures/figure_2.png", figure_2, width = 130, height = 200, units = "mm")
+ggsave("figures/figure_2.tiff", figure_2, width = 130, height = 200, units = "mm")
 
 #Figure 3
 #Performance of baseline and unets models
@@ -217,6 +219,7 @@ figure_3 <- fig_data |>
 figure_3
 
 ggsave("figures/figure_3.png", figure_3, width = 174, height = 100, units = "mm")
+ggsave("figures/figure_3.tiff", figure_3, width = 174, height = 100, units = "mm")
 
 #Figure 4
 #Histograms with performance metrics for best model and obs vs pred avg elevation (2x2 plot) for all lakes and test set only
@@ -261,6 +264,7 @@ figure_4 <- fig_4_a + fig_4_b + fig_4_c + fig_4_d + plot_annotation(tag_levels =
 figure_4
 
 ggsave("figures/figure_4.png", figure_4, width = 174, height = 160, units = "mm")
+ggsave("figures/figure_4.tiff", figure_4, width = 174, height = 160, units = "mm")
 
 #Figure 5
 #Example of prediction with ground truth, best baseline and best deep learning model
@@ -291,6 +295,7 @@ figure_5 <- (wrap_plots(row_1, nrow=1)+plot_spacer())/
 figure_5
 
 ggsave("figures/figure_5.png", figure_5, width = 174, height = 120, units = "mm")
+ggsave("figures/figure_5.tiff", figure_5, width = 174, height = 120, units = "mm")
 
 #Supplementary material
 #Figure S1
@@ -442,3 +447,34 @@ figure_s5 <- fig_s5_a + fig_s5_b + plot_annotation(tag_levels = "a")+plot_layout
 figure_s5
 
 ggsave("figures/figure_s5.png", figure_s5, width = 129, height = 180, units = "mm")
+
+
+
+
+#Draft pixel wise obs-pred plot
+lake_test_list <- lapply(lakes[lakes$partition == "test", ]$lake_id, function(lake){
+  
+  buffer_dir <- "data/buffer_100_percent/"
+  lake_obs <- raster(paste0(buffer_dir, "lakes_dem/lake_", lake, ".tif"))
+  lake_pred <- raster(paste0(buffer_dir, "lakes_pred/lake_", lake, ".tif"))
+  lake_mask <- raster(paste0(buffer_dir, "lakes_mask/lake_", lake, ".tif"))
+  
+  lake_df <- data.frame(lake_id = lake, 
+                        obs = lake_obs[lake_mask == 1],
+                        pred = lake_pred[lake_mask == 1])
+  
+  return(lake_df)
+})
+
+lake_test_df <- do.call(rbind, lake_test_list)
+
+lake_test_df |> 
+  ggplot(aes(obs, pred)) +
+  stat_density2d(aes(fill = ..density..^0.25), geom = "tile", contour = FALSE, n = 200, show.legend = FALSE) +
+  scale_fill_gradientn(colours = c("white", blues9))+
+  geom_abline(slope=1, intercept=0, linetype=3)+
+  scale_x_continuous(expand = c(0,0))+
+  scale_y_continuous(expand = c(0,0))+
+  coord_equal()+
+  xlab("Observed elevation (m)")+
+  ylab("Predicted elevation (m)")
