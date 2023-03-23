@@ -413,45 +413,7 @@ figure_s4
 ggsave("figures/figure_s4.png", figure_s4, width = 174, height = 80, units = "mm")
 
 #Figure S5
-#Predict versus observed zmax and zmean
-obs_pred_data <- model_performance |> 
-  left_join(lakes) |> 
-  mutate(Partition = factor(str_to_title(partition), levels = c("Train", "Valid", "Test")))
-
-#MAE scores
-mean(abs(obs_pred_data$pred_zmean - obs_pred_data$mean_depth))
-mean(abs(obs_pred_data$pred_zmax - obs_pred_data$max_depth))
-
-fig_s5_a <- obs_pred_data |> 
-  ggplot(aes(mean_depth, pred_zmean, col = Partition))+
-  geom_abline(intercept = 0, slope = 1, linetype=3)+
-  geom_point()+
-  scale_color_viridis_d(direction = -1)+
-  ylim(-0.05, 20)+
-  xlim(-0.05, 20)+
-  xlab("Observed mean depth (m)")+
-  ylab("Predicted maen depth (m)")
-
-fig_s5_b <- obs_pred_data |> 
-  ggplot(aes(max_depth, pred_zmax, col = Partition))+
-  geom_abline(intercept = 0, slope = 1, linetype=3)+
-  geom_point()+
-  scale_color_viridis_d(direction = -1)+
-  ylim(0, 40)+
-  xlim(0, 40)+
-  xlab("Observed maximum depth (m)")+
-  ylab("Predicted maximum depth (m)")
-
-figure_s5 <- fig_s5_a + fig_s5_b + plot_annotation(tag_levels = "a")+plot_layout(guides="collect", nrow=2)
-
-figure_s5
-
-ggsave("figures/figure_s5.png", figure_s5, width = 129, height = 180, units = "mm")
-
-
-
-
-#Draft pixel wise obs-pred plot
+#Pixel wise observed vs predicted plot for lakes in the test set
 lake_test_list <- lapply(lakes[lakes$partition == "test", ]$lake_id, function(lake){
   
   buffer_dir <- "data/buffer_100_percent/"
@@ -468,7 +430,12 @@ lake_test_list <- lapply(lakes[lakes$partition == "test", ]$lake_id, function(la
 
 lake_test_df <- do.call(rbind, lake_test_list)
 
-lake_test_df |> 
+#Determine convex hull surrounding all points of each lake
+convex_hull <- lake_test_df %>%
+  group_by(lake_id) %>%
+  slice(chull(obs, pred))
+
+figure_s5 <- lake_test_df |> 
   ggplot(aes(obs, pred)) +
   stat_density2d(aes(fill = ..density..^0.25), geom = "tile", contour = FALSE, n = 200, show.legend = FALSE) +
   scale_fill_gradientn(colours = c("white", blues9))+
@@ -476,5 +443,44 @@ lake_test_df |>
   scale_x_continuous(expand = c(0,0))+
   scale_y_continuous(expand = c(0,0))+
   coord_equal()+
+  geom_polygon(data = convex_hull, aes(group=lake_id), col="black", fill=NA, linewidth=0.1)+
   xlab("Observed elevation (m)")+
   ylab("Predicted elevation (m)")
+
+ggsave("figures/figure_s5.png", figure_s5, width = 129, height = 129, units = "mm")
+
+#Figure S6
+#Predict versus observed zmax and zmean
+obs_pred_data <- model_performance |> 
+  left_join(lakes) |> 
+  mutate(Partition = factor(str_to_title(partition), levels = c("Train", "Valid", "Test")))
+
+#MAE scores
+mean(abs(obs_pred_data$pred_zmean - obs_pred_data$mean_depth))
+mean(abs(obs_pred_data$pred_zmax - obs_pred_data$max_depth))
+
+fig_s6_a <- obs_pred_data |> 
+  ggplot(aes(mean_depth, pred_zmean, col = Partition))+
+  geom_abline(intercept = 0, slope = 1, linetype=3)+
+  geom_point()+
+  scale_color_viridis_d(direction = -1)+
+  ylim(-0.05, 20)+
+  xlim(-0.05, 20)+
+  xlab("Observed mean depth (m)")+
+  ylab("Predicted maen depth (m)")
+
+fig_s6_b <- obs_pred_data |> 
+  ggplot(aes(max_depth, pred_zmax, col = Partition))+
+  geom_abline(intercept = 0, slope = 1, linetype=3)+
+  geom_point()+
+  scale_color_viridis_d(direction = -1)+
+  ylim(0, 40)+
+  xlim(0, 40)+
+  xlab("Observed maximum depth (m)")+
+  ylab("Predicted maximum depth (m)")
+
+figure_s6 <- fig_s6_a + fig_s6_b + plot_annotation(tag_levels = "a")+plot_layout(guides="collect", nrow=2)
+
+figure_s6
+
+ggsave("figures/figure_s6.png", figure_s6, width = 129, height = 180, units = "mm")
