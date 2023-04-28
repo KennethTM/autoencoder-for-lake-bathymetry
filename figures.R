@@ -57,7 +57,7 @@ figure_1 <- ggplot()+
 figure_1
 
 ggsave("figures/figure_1.png", figure_1, width = 84, height = 110, units = "mm")
-ggsave("figures/figure_1.tiff", figure_1, width = 84, height = 110, units = "mm")
+ggsave("figures/figure_1.tiff", figure_1, width = 84, height = 110, units = "mm", compression = "lzw")
 
 #Figure 2
 #Overview of DEM clipout method and an example observed/predicted lake bathymetry
@@ -163,7 +163,7 @@ figure_2 <- fig_2_a / (fig_2_b + fig_2_c) / (fig_2_d + fig_2_e) + plot_annotatio
 figure_2
 
 ggsave("figures/figure_2.png", figure_2, width = 130, height = 200, units = "mm")
-ggsave("figures/figure_2.tiff", figure_2, width = 130, height = 200, units = "mm")
+ggsave("figures/figure_2.tiff", figure_2, width = 130, height = 200, units = "mm", compression = "lzw")
 
 #Figure 3
 #Performance of baseline and unets models
@@ -219,7 +219,7 @@ figure_3 <- fig_data |>
 figure_3
 
 ggsave("figures/figure_3.png", figure_3, width = 174, height = 100, units = "mm")
-ggsave("figures/figure_3.tiff", figure_3, width = 174, height = 100, units = "mm")
+ggsave("figures/figure_3.tiff", figure_3, width = 174, height = 100, units = "mm", compression = "lzw")
 
 #Figure 4
 #Histograms with performance metrics for best model and obs vs pred avg elevation (2x2 plot) for all lakes and test set only
@@ -264,7 +264,7 @@ figure_4 <- fig_4_a + fig_4_b + fig_4_c + fig_4_d + plot_annotation(tag_levels =
 figure_4
 
 ggsave("figures/figure_4.png", figure_4, width = 174, height = 160, units = "mm")
-ggsave("figures/figure_4.tiff", figure_4, width = 174, height = 160, units = "mm")
+ggsave("figures/figure_4.tiff", figure_4, width = 174, height = 160, units = "mm", compression = "lzw")
 
 #Figure 5
 #Example of prediction with ground truth, best baseline and best deep learning model
@@ -295,7 +295,7 @@ figure_5 <- (wrap_plots(row_1, nrow=1)+plot_spacer())/
 figure_5
 
 ggsave("figures/figure_5.png", figure_5, width = 174, height = 120, units = "mm")
-ggsave("figures/figure_5.tiff", figure_5, width = 174, height = 120, units = "mm")
+ggsave("figures/figure_5.tiff", figure_5, width = 174, height = 120, units = "mm", compression = "lzw")
 
 #Supplementary material
 #Figure S1
