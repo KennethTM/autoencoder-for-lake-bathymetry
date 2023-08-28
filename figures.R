@@ -108,8 +108,12 @@ fig_2_a <- ggplot()+
   geom_sf(data=lake_33_bbox, fill=NA, alpha=0, aes(linetype="33%"), col="black")+
   geom_sf(data=lake_66_bbox, fill=NA, alpha=0, aes(linetype="66%"), col="black")+
   geom_sf(data=lake_100_bbox, fill=NA, alpha=0, aes(linetype="100%"), col="black")+
-  scale_linetype_manual(values=c("33%" = 3, "66%" = 2, "100%" = 1), name = "Buffer", guide=guide_legend(override.aes = list(fill = NA)))+
-  scale_fill_continuous_sequential(palette="Terrain 2", rev=FALSE, na.value = NA, name="Elevation (m)", limits=c(19, 153))+
+  scale_linetype_manual(values=c("33%" = 3, "66%" = 2, "100%" = 1), name = "Buffer", 
+                        guide=guide_legend(override.aes = list(fill = NA), order=2), 
+                        breaks = c("33%", "66%", "100%"))+
+  scale_fill_continuous_sequential(palette="Terrain 2", rev=FALSE, na.value = NA, 
+                                   name="Elevation (m)", limits=c(19, 153),
+                                   guide=guide_colorbar(order=1))+
   annotation_scale(location="br")+
   scale_x_continuous(expand = c(0,0))+
   scale_y_continuous(expand = c(0,0))+
@@ -164,6 +168,7 @@ figure_2
 
 ggsave("figures/figure_2.png", figure_2, width = 130, height = 200, units = "mm")
 ggsave("figures/figure_2.tiff", figure_2, width = 130, height = 200, units = "mm", compression = "lzw")
+ggsave("figures/figure_2.pdf", figure_2, width = 130, height = 200, units = "mm")
 
 #Figure 3
 #Performance of baseline and unets models
